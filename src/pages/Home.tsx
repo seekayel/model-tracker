@@ -3,124 +3,168 @@ import { Link } from 'react-router-dom';
 const VARIANTS = [
   {
     id: 'v1',
-    name: 'Neon Arcade — Card Grid',
-    description: 'Classic card grid with glowing neon borders, CRT scanlines, and electric color pops on a dark background.',
-    color: 'from-purple-950 to-black',
-    border: 'border-purple-500',
-    accent: 'text-purple-400',
+    family: 'neon',
+    name: 'Arcade Cabinets',
+    description: 'Each game is an arcade cabinet. The model name blazes on the marquee — this is a benchmark, not a game store.',
+    color: 'from-[#1a1726] to-[#07060b]',
+    border: 'border-[#ff00ff]/40',
+    accent: 'text-[#ff00ff]',
+    accentSecondary: 'text-[#00ffff]',
   },
   {
     id: 'v2',
-    name: 'Neon Arcade — Spotlight',
-    description: 'Single-focus spotlight carousel. One featured game takes center stage with a thumbnail filmstrip below.',
-    color: 'from-indigo-950 to-black',
-    border: 'border-cyan-500',
-    accent: 'text-cyan-400',
+    family: 'neon',
+    name: 'Model Deathmatch',
+    description: 'Split-screen head-to-head. Pick two models, compare their games side by side. Confrontational and electric.',
+    color: 'from-[#050509] to-[#0a0a14]',
+    border: 'border-[#ff0064]/40',
+    accent: 'text-[#ff0064]',
+    accentSecondary: 'text-[#00e5ff]',
   },
   {
     id: 'v3',
-    name: 'Neon Arcade — High Scores',
-    description: 'Arcade leaderboard ranking. Games sorted by score in a glowing table with medal tiers and point values.',
-    color: 'from-pink-950 to-black',
-    border: 'border-pink-500',
-    accent: 'text-pink-400',
+    family: 'neon',
+    name: 'Model Columns',
+    description: 'Horizontal scroll through model columns. Each model gets its own world — a tall, glowing vertical lane.',
+    color: 'from-[#0d0818] to-[#050507]',
+    border: 'border-[#a855f7]/30',
+    accent: 'text-[#c084fc]',
+    accentSecondary: 'text-[#6ee7b7]',
   },
   {
     id: 'v4',
-    name: 'Vapor Dashboard — Frosted Grid',
-    description: 'Frosted glass cards on a pastel gradient mesh. Stats bar, rounded corners, and dreamy blur effects.',
-    color: 'from-violet-500 via-fuchsia-400 to-cyan-400',
-    border: 'border-white/30',
-    accent: 'text-white',
+    family: 'vapor',
+    name: 'Museum Gallery',
+    description: 'White-cube gallery. Games are framed artworks, models are artist placards. Elegant, minimal, unexpected.',
+    color: 'from-[#fafafa] to-[#f0ecf0]',
+    border: 'border-[#c44dff]/20',
+    accent: 'text-[#c44dff]',
+    accentSecondary: 'text-[#1a1a2e]',
   },
   {
     id: 'v5',
-    name: 'Vapor Dashboard — Bento Grid',
-    description: 'Asymmetric bento-box masonry layout. Mixed card sizes create visual hierarchy over a deep purple gradient.',
-    color: 'from-indigo-900 via-violet-800 to-purple-900',
-    border: 'border-fuchsia-400/40',
-    accent: 'text-fuchsia-200',
+    family: 'vapor',
+    name: 'Model Heatmap',
+    description: 'Data-first dashboard. Gradient bar charts rank models by rating. Click to expand into game details.',
+    color: 'from-[#1a1030] to-[#0f0a1a]',
+    border: 'border-[#c084fc]/30',
+    accent: 'text-[#f0abfc]',
+    accentSecondary: 'text-[#818cf8]',
   },
   {
     id: 'v6',
-    name: 'Vapor Dashboard — Showcase',
-    description: 'Full-width horizontal scroll with hero-sized cards. Sunset gradients, model filters, and chrome reflections.',
-    color: 'from-purple-900 via-pink-700 to-orange-500',
-    border: 'border-pink-400/40',
-    accent: 'text-pink-200',
+    family: 'vapor',
+    name: 'Full Bleed Scroll',
+    description: 'One game per screen. Full-viewport cinematic sections with giant model-name watermarks. Pure immersion.',
+    color: 'from-[#2d1b69] via-[#4a1942] to-[#b44593]',
+    border: 'border-[#ec4899]/30',
+    accent: 'text-[#f472b6]',
+    accentSecondary: 'text-[#c084fc]',
   },
 ];
 
 export default function Home() {
+  const neonVariants = VARIANTS.filter(v => v.family === 'neon');
+  const vaporVariants = VARIANTS.filter(v => v.family === 'vapor');
+
   return (
-    <div className="min-h-screen bg-black text-white">
-      <header className="pt-20 pb-12 px-6 text-center">
-        <h1 className="text-6xl font-black tracking-tight mb-4">
-          MODEL<span className="text-indigo-400">TRACKER</span>
+    <div className="min-h-screen text-white" style={{ background: '#07060b', fontFamily: '"Outfit", system-ui, sans-serif' }}>
+      {/* Ambient glow */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] pointer-events-none opacity-20"
+        style={{ background: 'radial-gradient(ellipse, rgba(168,85,247,0.3), transparent 70%)' }}
+      />
+
+      <header className="relative z-10 pt-20 pb-12 px-6 text-center">
+        <p className="text-[9px] tracking-[0.8em] uppercase text-white/15 mb-6">AI Game Benchmark Gallery</p>
+        <h1 className="text-6xl md:text-8xl font-black tracking-tight mb-4" style={{ fontFamily: '"Syne", sans-serif' }}>
+          <span className="text-white/90">MODEL</span>
+          <span style={{ color: '#c084fc' }}>TRACKER</span>
         </h1>
-        <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
-          A benchmark gallery showcasing web-based games produced by different AI coding models.
-          Six gallery designs across two themes — choose your view.
+        <p className="text-sm text-white/30 max-w-md mx-auto leading-relaxed">
+          One prompt. One shot. How well can each AI model build a web game from scratch?
+          Six ways to explore the results.
         </p>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 pb-24">
+      <main className="max-w-5xl mx-auto px-6 pb-24 relative z-10">
         {/* Neon Arcade section */}
-        <h2 className="text-xs uppercase tracking-[0.5em] text-purple-500 mb-4 mt-4">Neon Arcade</h2>
-        <div className="grid gap-4 mb-12">
-          {VARIANTS.slice(0, 3).map((v) => (
-            <Link
-              key={v.id}
-              to={`/${v.id}`}
-              className={`group relative block overflow-hidden rounded-2xl border-2 ${v.border} bg-gradient-to-r ${v.color} p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className={`text-sm font-mono uppercase tracking-widest ${v.accent} opacity-60`}>
-                    {v.id.toUpperCase()}
-                  </span>
-                  <h3 className={`text-2xl font-bold mt-1 ${v.accent}`}>
-                    {v.name}
-                  </h3>
-                  <p className={`mt-2 max-w-lg ${v.accent} opacity-70 text-sm`}>
-                    {v.description}
-                  </p>
+        <div className="mb-16">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, rgba(255,0,255,0.3), transparent)' }} />
+            <h2 className="text-[10px] tracking-[0.6em] uppercase" style={{ color: '#ff00ff' }}>
+              Neon Arcade
+            </h2>
+            <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, rgba(0,255,255,0.3), transparent)' }} />
+          </div>
+
+          <div className="grid gap-3">
+            {neonVariants.map((v) => (
+              <Link
+                key={v.id}
+                to={`/${v.id}`}
+                className={`group relative block overflow-hidden rounded-xl border ${v.border} bg-gradient-to-r ${v.color} p-6 md:p-8 transition-all duration-500 hover:scale-[1.01]`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className={`text-[10px] font-mono uppercase tracking-[0.4em] ${v.accentSecondary} opacity-50`}>
+                        {v.id.toUpperCase()}
+                      </span>
+                    </div>
+                    <h3 className={`text-xl md:text-2xl font-bold ${v.accent}`} style={{ fontFamily: '"Syne", sans-serif' }}>
+                      {v.name}
+                    </h3>
+                    <p className="mt-1.5 max-w-lg text-white/30 text-xs leading-relaxed">
+                      {v.description}
+                    </p>
+                  </div>
+                  <div className={`text-2xl ${v.accent} opacity-30 group-hover:opacity-80 transition-opacity`}>
+                    &rarr;
+                  </div>
                 </div>
-                <div className={`text-4xl ${v.accent} opacity-40 group-hover:opacity-100 transition-opacity`}>
-                  &rarr;
-                </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* Vapor Dashboard section */}
-        <h2 className="text-xs uppercase tracking-[0.5em] text-fuchsia-400 mb-4">Vapor Dashboard</h2>
-        <div className="grid gap-4">
-          {VARIANTS.slice(3).map((v) => (
-            <Link
-              key={v.id}
-              to={`/${v.id}`}
-              className={`group relative block overflow-hidden rounded-2xl border-2 ${v.border} bg-gradient-to-r ${v.color} p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className={`text-sm font-mono uppercase tracking-widest ${v.accent} opacity-60`}>
-                    {v.id.toUpperCase()}
-                  </span>
-                  <h3 className={`text-2xl font-bold mt-1 ${v.accent}`}>
-                    {v.name}
-                  </h3>
-                  <p className={`mt-2 max-w-lg ${v.accent} opacity-70 text-sm`}>
-                    {v.description}
-                  </p>
+        <div>
+          <div className="flex items-center gap-4 mb-6">
+            <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, rgba(196,77,255,0.3), transparent)' }} />
+            <h2 className="text-[10px] tracking-[0.6em] uppercase" style={{ color: '#c44dff' }}>
+              Vapor Dashboard
+            </h2>
+            <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, rgba(236,72,153,0.3), transparent)' }} />
+          </div>
+
+          <div className="grid gap-3">
+            {vaporVariants.map((v) => (
+              <Link
+                key={v.id}
+                to={`/${v.id}`}
+                className={`group relative block overflow-hidden rounded-xl border ${v.border} bg-gradient-to-r ${v.color} p-6 md:p-8 transition-all duration-500 hover:scale-[1.01]`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className={`text-[10px] font-mono uppercase tracking-[0.4em] ${v.accentSecondary} opacity-50`}>
+                        {v.id.toUpperCase()}
+                      </span>
+                    </div>
+                    <h3 className={`text-xl md:text-2xl font-bold ${v.accent}`} style={{ fontFamily: '"Syne", sans-serif' }}>
+                      {v.name}
+                    </h3>
+                    <p className="mt-1.5 max-w-lg text-white/30 text-xs leading-relaxed">
+                      {v.description}
+                    </p>
+                  </div>
+                  <div className={`text-2xl ${v.accent} opacity-30 group-hover:opacity-80 transition-opacity`}>
+                    &rarr;
+                  </div>
                 </div>
-                <div className={`text-4xl ${v.accent} opacity-40 group-hover:opacity-100 transition-opacity`}>
-                  &rarr;
-                </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
       </main>
     </div>

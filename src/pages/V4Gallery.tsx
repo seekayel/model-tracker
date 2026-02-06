@@ -3,109 +3,137 @@ import { PLACEHOLDER_GAMES } from '../data';
 import PlaceholderImage from '../components/PlaceholderImage';
 
 /**
- * V4 — VAPOR DASHBOARD: Frosted Grid
- * Vaporwave-inspired data dashboard with gradient meshes, frosted glass
- * cards, pastel synthetics, and playful geometric accents.
+ * V4 — VAPOR DASHBOARD: "Museum Gallery"
+ *
+ * DESIGN CONCEPT: A pristine white-cube gallery with vaporwave-colored artwork.
+ * Each game is a framed piece on a white wall. The model name is the artist
+ * placard beside each work. Ultra-generous whitespace. The games ARE the art.
+ * Hover to see the info card slide out like a museum audio guide.
+ *
+ * TYPOGRAPHY: Instrument Serif for titles (editorial elegance meets vapor).
+ * Outfit for body (geometric, clean).
+ *
+ * BOLD CHOICE: White background — the ONLY white design. Games pop like
+ * paintings against gallery walls. The contrast with other variants is jarring.
  */
 export default function V4Gallery() {
   return (
     <div
-      className="min-h-screen text-white relative"
+      className="min-h-screen relative"
       style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)',
+        fontFamily: '"Outfit", sans-serif',
+        background: '#fafafa',
+        color: '#1a1a2e',
       }}
     >
-      {/* Mesh overlay shapes */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[10%] left-[5%] w-72 h-72 rounded-full bg-yellow-300/20 blur-[100px]" />
-        <div className="absolute top-[50%] right-[10%] w-96 h-96 rounded-full bg-pink-400/25 blur-[120px]" />
-        <div className="absolute bottom-[10%] left-[30%] w-80 h-80 rounded-full bg-cyan-300/20 blur-[100px]" />
-      </div>
+      {/* Subtle gradient wash at top */}
+      <div className="fixed top-0 left-0 right-0 h-[500px] pointer-events-none opacity-30"
+        style={{ background: 'linear-gradient(180deg, rgba(196,77,255,0.08) 0%, rgba(255,107,107,0.04) 50%, transparent 100%)' }}
+      />
 
       {/* Header */}
-      <header className="relative z-10 px-8 pt-10 pb-4 flex items-center justify-between">
-        <Link
-          to="/"
-          className="backdrop-blur-md bg-white/10 rounded-full px-4 py-2 text-sm hover:bg-white/20 transition-colors"
-        >
-          &larr; Home
+      <header className="relative z-10 max-w-6xl mx-auto px-8 pt-16 pb-12">
+        <Link to="/" className="text-[10px] tracking-[0.4em] uppercase text-[#1a1a2e]/30 hover:text-[#1a1a2e]/60 transition-colors">
+          &larr; Return
         </Link>
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-[0.6em] text-white/50">V4 &mdash; Frosted Grid</p>
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight drop-shadow-lg">
-            VAPOR DASH
-          </h1>
+        <div className="mt-10 flex items-end justify-between">
+          <div>
+            <p className="text-[10px] tracking-[0.6em] uppercase text-[#1a1a2e]/25 mb-3">Gallery V4</p>
+            <h1
+              className="text-5xl md:text-8xl leading-[0.9] tracking-tight"
+              style={{ fontFamily: '"Instrument Serif", serif' }}
+            >
+              <span className="italic" style={{ color: '#c44dff' }}>Vapor</span>
+              <br />
+              <span style={{ color: '#1a1a2e' }}>Gallery</span>
+            </h1>
+          </div>
+          <div className="hidden md:block text-right pb-2">
+            <p className="text-xs text-[#1a1a2e]/30" style={{ fontFamily: '"Instrument Serif", serif', fontStyle: 'italic' }}>
+              {PLACEHOLDER_GAMES.length} works exhibited
+            </p>
+            <p className="text-[10px] text-[#1a1a2e]/20 mt-1">
+              {new Set(PLACEHOLDER_GAMES.map(g => g.model)).size} artists
+            </p>
+          </div>
         </div>
-        <div className="w-20" />
+        {/* Thin gradient line */}
+        <div className="mt-8 h-px"
+          style={{ background: 'linear-gradient(90deg, #c44dff, #ff6b6b, #feca57, #4facfe, transparent)' }}
+        />
       </header>
 
-      {/* Stats bar */}
-      <div className="relative z-10 px-8 py-4 flex gap-4 justify-center flex-wrap">
-        {[
-          { label: 'Games', value: PLACEHOLDER_GAMES.length },
-          { label: 'Models', value: new Set(PLACEHOLDER_GAMES.map(g => g.model)).size },
-          { label: 'Avg Rating', value: (PLACEHOLDER_GAMES.reduce((a, g) => a + g.rating, 0) / PLACEHOLDER_GAMES.length).toFixed(1) },
-        ].map(stat => (
-          <div
-            key={stat.label}
-            className="backdrop-blur-lg bg-white/10 border border-white/20 rounded-2xl px-6 py-3 text-center"
-          >
-            <p className="text-2xl font-black">{stat.value}</p>
-            <p className="text-[10px] uppercase tracking-widest text-white/60">{stat.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Grid */}
-      <main className="relative z-10 px-8 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {PLACEHOLDER_GAMES.map((game) => (
-            <article
-              key={game.id}
-              className="group backdrop-blur-xl bg-white/[0.12] border border-white/20 rounded-3xl overflow-hidden hover:bg-white/[0.2] transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl"
-            >
-              {/* Image */}
-              <div className="relative overflow-hidden rounded-t-3xl">
+      {/* Gallery */}
+      <main className="relative z-10 max-w-6xl mx-auto px-8 pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-20">
+          {PLACEHOLDER_GAMES.map((game, i) => (
+            <article key={game.id} className="group">
+              {/* Frame */}
+              <div
+                className="relative rounded-sm overflow-hidden transition-all duration-700 group-hover:shadow-2xl"
+                style={{
+                  boxShadow: '0 4px 30px rgba(0,0,0,0.08)',
+                  border: '8px solid white',
+                  outline: '1px solid rgba(0,0,0,0.06)',
+                }}
+              >
                 <PlaceholderImage
                   seed={game.id}
-                  className="w-full h-auto brightness-110 saturate-[1.3] group-hover:scale-110 transition-transform duration-700"
+                  className="w-full h-auto group-hover:scale-[1.03] transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-              </div>
 
-              {/* Content */}
-              <div className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] bg-white/20 rounded-full px-3 py-1 backdrop-blur-sm">
-                    {game.model}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-yellow-300 text-xs">&#9733;</span>
-                    <span className="text-xs font-bold">{game.rating}</span>
+                {/* Hover overlay with play button */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-500 flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-500">
+                    <button
+                      className="px-8 py-3 rounded-full text-xs uppercase tracking-[0.3em] font-medium text-white transition-all"
+                      style={{
+                        background: 'linear-gradient(135deg, #c44dff, #ff6b6b)',
+                        boxShadow: '0 4px 20px rgba(196,77,255,0.4)',
+                      }}
+                    >
+                      Play
+                    </button>
                   </div>
                 </div>
+              </div>
 
-                <h2 className="text-lg font-bold mb-2 group-hover:text-yellow-200 transition-colors">
-                  {game.title}
-                </h2>
-                <p className="text-xs text-white/50 leading-relaxed mb-4">
-                  {game.description}
-                </p>
-
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {game.tags.map(tag => (
-                    <span
-                      key={tag}
-                      className="text-[9px] uppercase tracking-wider bg-white/10 rounded-full px-2.5 py-0.5"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+              {/* Placard — like a museum label */}
+              <div className="mt-4 flex justify-between items-start">
+                <div>
+                  <h2
+                    className="text-xl md:text-2xl tracking-tight"
+                    style={{ fontFamily: '"Instrument Serif", serif' }}
+                  >
+                    {game.title}
+                  </h2>
+                  <p
+                    className="text-sm mt-0.5 italic"
+                    style={{ fontFamily: '"Instrument Serif", serif', color: '#c44dff' }}
+                  >
+                    {game.model}
+                  </p>
                 </div>
-
-                <button className="w-full py-2.5 rounded-xl text-xs uppercase tracking-widest font-bold bg-white/20 border border-white/30 backdrop-blur-sm hover:bg-white/30 transition-all">
-                  Play Now
-                </button>
+                <div className="text-right">
+                  <div className="flex items-center gap-1 justify-end">
+                    <span className="text-[10px] text-[#1a1a2e]/30">&#9733;</span>
+                    <span className="text-sm font-semibold text-[#1a1a2e]/60">{game.rating}</span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-[11px] text-[#1a1a2e]/35 leading-relaxed mt-2 max-w-md">
+                {game.description}
+              </p>
+              <div className="flex gap-2 mt-3">
+                {game.tags.map(tag => (
+                  <span
+                    key={tag}
+                    className="text-[9px] uppercase tracking-widest text-[#1a1a2e]/20"
+                    style={{ borderBottom: `1px solid ${i % 2 === 0 ? 'rgba(196,77,255,0.2)' : 'rgba(255,107,107,0.2)'}` }}
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
             </article>
           ))}
@@ -113,9 +141,11 @@ export default function V4Gallery() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 px-8 py-8 text-center">
-        <p className="text-[10px] tracking-[0.5em] text-white/30 uppercase">
-          Model Tracker &mdash; Vapor Dashboard
+      <footer className="relative z-10 max-w-6xl mx-auto px-8 py-8 border-t border-[#1a1a2e]/5">
+        <p className="text-[10px] tracking-[0.4em] uppercase text-[#1a1a2e]/15 text-center"
+          style={{ fontFamily: '"Instrument Serif", serif', fontStyle: 'italic', letterSpacing: '0.3em' }}
+        >
+          Model Tracker &mdash; Vapor Gallery
         </p>
       </footer>
     </div>

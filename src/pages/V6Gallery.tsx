@@ -4,181 +4,196 @@ import { PLACEHOLDER_GAMES } from '../data';
 import PlaceholderImage from '../components/PlaceholderImage';
 
 /**
- * V6 — VAPOR DASHBOARD: Horizontal Showcase
- * Full-width horizontal scrolling showcase. Each game gets a massive hero
- * section. Vaporwave palette with sunset gradients and chrome reflections.
+ * V6 — VAPOR DASHBOARD: "Full Bleed Scroll"
+ *
+ * DESIGN CONCEPT: Each game is a full-viewport section. You scroll vertically
+ * and each game consumes the entire screen — image bleeds edge to edge,
+ * content overlaid. The model name is ENORMOUS, running across the bottom
+ * of each section as a ghosted watermark. It's cinematic, overwhelming.
+ *
+ * TYPOGRAPHY: Syne for hero titles (geometric, impactful).
+ * Outfit for body. DM Mono for data.
+ *
+ * BOLD CHOICE: ONE game per screen. No grid, no cards, no density.
+ * Just pure full-bleed immersion. The model watermark is 20vw+ in size.
+ * This is the most dramatic, least information-dense variant.
  */
 export default function V6Gallery() {
-  const [activeModel, setActiveModel] = useState<string | null>(null);
-  const models = [...new Set(PLACEHOLDER_GAMES.map(g => g.model))];
-  const filtered = activeModel
-    ? PLACEHOLDER_GAMES.filter(g => g.model === activeModel)
-    : PLACEHOLDER_GAMES;
+  const [current, setCurrent] = useState(0);
 
   return (
     <div
-      className="min-h-screen text-white relative"
-      style={{
-        background: 'linear-gradient(180deg, #1a1033 0%, #2d1b69 30%, #4a1942 60%, #b44593 85%, #ff6b6b 100%)',
-      }}
+      className="text-white relative"
+      style={{ fontFamily: '"Outfit", sans-serif' }}
     >
-      {/* Decorative sun */}
-      <div className="fixed bottom-[-100px] left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-t-full pointer-events-none"
-        style={{
-          background: 'linear-gradient(0deg, #ff6b6b, #feca57, #ff9ff3)',
-          opacity: 0.15,
-          filter: 'blur(40px)',
-        }}
-      />
-      {/* Horizontal grid lines */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-[0.06]"
-        style={{
-          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.3) 40px, rgba(255,255,255,0.3) 41px)',
-        }}
-      />
-
-      {/* Header */}
-      <header className="relative z-10 px-8 pt-10 pb-6">
-        <div className="flex items-center justify-between mb-6">
-          <Link
-            to="/"
-            className="backdrop-blur-md bg-white/10 rounded-full px-4 py-2 text-sm hover:bg-white/20 transition-colors"
-          >
-            &larr; Home
-          </Link>
-          <p className="text-[10px] uppercase tracking-[0.6em] text-pink-300/50">V6 &mdash; Showcase</p>
-        </div>
-        <h1
-          className="text-5xl md:text-8xl font-black tracking-tight mb-4"
-          style={{
-            background: 'linear-gradient(135deg, #feca57, #ff6b6b, #ff9ff3, #c44dff)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
+      {/* Fixed navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 px-6 md:px-10 py-5 flex items-center justify-between">
+        <Link
+          to="/"
+          className="text-[10px] tracking-[0.4em] uppercase text-white/40 hover:text-white/80 transition-colors backdrop-blur-sm bg-black/20 rounded-full px-4 py-2"
         >
-          VAPOR DASH
-        </h1>
-
-        {/* Model filter pills */}
-        <div className="flex flex-wrap gap-2 mt-4">
-          <button
-            onClick={() => setActiveModel(null)}
-            className={`text-[10px] uppercase tracking-widest rounded-full px-4 py-1.5 border transition-all ${
-              !activeModel
-                ? 'bg-white/20 border-white/40 text-white'
-                : 'bg-transparent border-white/10 text-white/40 hover:text-white/70'
-            }`}
-          >
-            All
-          </button>
-          {models.map(model => (
+          &larr; Home
+        </Link>
+        <div className="backdrop-blur-sm bg-black/20 rounded-full px-4 py-2 flex items-center gap-3">
+          <h1 className="text-sm font-bold tracking-tight" style={{ fontFamily: '"Syne", sans-serif' }}>
+            VAPOR DASH
+          </h1>
+          <span className="text-[9px] text-white/30">V6</span>
+        </div>
+        {/* Progress dots */}
+        <div className="flex gap-1.5 backdrop-blur-sm bg-black/20 rounded-full px-3 py-2">
+          {PLACEHOLDER_GAMES.map((_, i) => (
             <button
-              key={model}
-              onClick={() => setActiveModel(activeModel === model ? null : model)}
-              className={`text-[10px] uppercase tracking-widest rounded-full px-4 py-1.5 border transition-all ${
-                activeModel === model
-                  ? 'bg-white/20 border-white/40 text-white'
-                  : 'bg-transparent border-white/10 text-white/40 hover:text-white/70'
+              key={i}
+              onClick={() => {
+                setCurrent(i);
+                document.getElementById(`game-section-${i}`)?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`w-2 h-2 rounded-full transition-all ${
+                i === current ? 'bg-white scale-125' : 'bg-white/20 hover:bg-white/40'
               }`}
-            >
-              {model}
-            </button>
+            />
           ))}
         </div>
-      </header>
+      </nav>
 
-      {/* Horizontal scroll showcase */}
-      <main className="relative z-10 py-10">
-        <div className="flex gap-6 overflow-x-auto px-8 pb-6 snap-x snap-mandatory">
-          {filtered.map((game) => (
-            <article
-              key={game.id}
-              className="group flex-shrink-0 w-[85vw] md:w-[600px] snap-center"
+      {/* Full-bleed sections */}
+      {PLACEHOLDER_GAMES.map((game, i) => {
+        const isEven = i % 2 === 0;
+
+        return (
+          <section
+            key={game.id}
+            id={`game-section-${i}`}
+            className="relative min-h-screen flex items-end overflow-hidden"
+            onMouseEnter={() => setCurrent(i)}
+          >
+            {/* Full background image */}
+            <div className="absolute inset-0">
+              <PlaceholderImage
+                seed={game.id}
+                className="w-full h-full object-cover saturate-[1.6] brightness-75 scale-105"
+              />
+              {/* Gradient overlays */}
+              <div className="absolute inset-0" style={{
+                background: isEven
+                  ? 'linear-gradient(180deg, rgba(15,10,26,0.3) 0%, rgba(15,10,26,0.95) 80%)'
+                  : 'linear-gradient(180deg, rgba(26,16,51,0.3) 0%, rgba(26,16,51,0.95) 80%)',
+              }} />
+              {/* Side gradient for readability */}
+              <div className="absolute inset-0" style={{
+                background: isEven
+                  ? 'linear-gradient(90deg, rgba(15,10,26,0.8) 0%, transparent 60%)'
+                  : 'linear-gradient(270deg, rgba(26,16,51,0.8) 0%, transparent 60%)',
+              }} />
+            </div>
+
+            {/* Giant model watermark */}
+            <div
+              className="absolute bottom-[15%] pointer-events-none select-none whitespace-nowrap"
+              style={{
+                fontFamily: '"Syne", sans-serif',
+                fontWeight: 800,
+                fontSize: 'clamp(80px, 15vw, 250px)',
+                lineHeight: 1,
+                color: 'transparent',
+                WebkitTextStroke: '1px rgba(255,255,255,0.06)',
+                left: isEven ? '-2%' : 'auto',
+                right: isEven ? 'auto' : '-2%',
+              }}
             >
-              <div className="relative rounded-3xl border border-white/10 overflow-hidden backdrop-blur-md bg-white/[0.06] hover:bg-white/[0.1] transition-all duration-500 hover:shadow-2xl hover:shadow-pink-500/20">
-                {/* Hero image */}
-                <div className="relative h-64 md:h-80 overflow-hidden">
-                  <PlaceholderImage
-                    seed={game.id}
-                    className="w-full h-full object-cover saturate-[1.5] brightness-90 group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a1033] via-transparent to-transparent" />
+              {game.model}
+            </div>
 
-                  {/* Rating badge */}
-                  <div className="absolute top-4 right-4 backdrop-blur-sm bg-black/40 rounded-xl px-3 py-2 text-center">
-                    <p className="text-yellow-400 text-lg font-black">{game.rating}</p>
-                    <p className="text-[7px] uppercase tracking-widest text-white/40">rating</p>
-                  </div>
-                </div>
+            {/* Content */}
+            <div className={`relative z-10 w-full px-8 md:px-16 pb-16 md:pb-24 pt-32 ${isEven ? '' : 'text-right'}`}>
+              <div className={`max-w-xl ${isEven ? '' : 'ml-auto'}`}>
+                {/* Number */}
+                <p className="text-[10px] tracking-[0.5em] text-white/20 uppercase mb-4"
+                  style={{ fontFamily: '"DM Mono", monospace' }}
+                >
+                  {String(i + 1).padStart(2, '0')} / {String(PLACEHOLDER_GAMES.length).padStart(2, '0')}
+                </p>
 
-                {/* Content */}
-                <div className="p-6 md:p-8">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span
-                      className="text-[10px] uppercase tracking-widest rounded-full px-3 py-1"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(255,107,107,0.2), rgba(196,77,255,0.2))',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                      }}
-                    >
-                      {game.model}
-                    </span>
-                  </div>
-
-                  <h2
-                    className="text-3xl md:text-4xl font-black mb-3 tracking-tight"
+                {/* Model attribution */}
+                <div className={`flex items-center gap-3 mb-4 ${isEven ? '' : 'justify-end'}`}>
+                  <span
+                    className="text-xs uppercase tracking-[0.3em] px-3 py-1.5 rounded-full backdrop-blur-sm"
                     style={{
-                      background: 'linear-gradient(135deg, #fff, #ff9ff3)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
+                      background: 'rgba(196,77,255,0.15)',
+                      border: '1px solid rgba(196,77,255,0.25)',
+                      color: '#e9b0ff',
                     }}
                   >
-                    {game.title}
-                  </h2>
+                    {game.model}
+                  </span>
+                  <span className="text-sm font-bold text-yellow-400/60" style={{ fontFamily: '"DM Mono", monospace' }}>
+                    {game.rating}
+                  </span>
+                </div>
 
-                  <p className="text-sm text-white/40 leading-relaxed mb-6 max-w-md">
-                    {game.description}
-                  </p>
+                {/* Title */}
+                <h2
+                  className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.9] mb-6"
+                  style={{
+                    fontFamily: '"Syne", sans-serif',
+                    background: isEven
+                      ? 'linear-gradient(135deg, #fff 30%, #c084fc)'
+                      : 'linear-gradient(135deg, #fff 30%, #f472b6)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  {game.title}
+                </h2>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
-                      {game.tags.map(tag => (
-                        <span
-                          key={tag}
-                          className="text-[9px] uppercase tracking-wider text-pink-300/40 border border-pink-400/15 rounded-full px-2.5 py-0.5"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <button
-                      className="px-6 py-2.5 rounded-xl text-xs uppercase tracking-widest font-bold transition-all"
-                      style={{
-                        background: 'linear-gradient(135deg, #ff6b6b, #c44dff)',
-                        boxShadow: '0 4px 20px rgba(196,77,255,0.3)',
-                      }}
-                    >
-                      Play &rarr;
-                    </button>
+                {/* Description */}
+                <p className="text-sm md:text-base text-white/35 leading-relaxed mb-6 max-w-md"
+                  style={isEven ? {} : { marginLeft: 'auto' }}
+                >
+                  {game.description}
+                </p>
+
+                {/* Tags + CTA */}
+                <div className={`flex items-center gap-4 ${isEven ? '' : 'justify-end'}`}>
+                  <div className={`flex gap-2 ${isEven ? '' : 'order-2'}`}>
+                    {game.tags.map(tag => (
+                      <span key={tag} className="text-[9px] uppercase tracking-widest text-white/15">
+                        {tag}
+                      </span>
+                    ))}
                   </div>
+                  <button
+                    className={`px-8 py-3 rounded-full text-xs uppercase tracking-[0.3em] font-bold transition-all hover:scale-105 ${isEven ? '' : 'order-1'}`}
+                    style={{
+                      background: isEven
+                        ? 'linear-gradient(135deg, #c44dff, #7c3aed)'
+                        : 'linear-gradient(135deg, #ec4899, #db2777)',
+                      boxShadow: isEven
+                        ? '0 4px 30px rgba(196,77,255,0.3)'
+                        : '0 4px 30px rgba(236,72,153,0.3)',
+                    }}
+                  >
+                    Play Now
+                  </button>
                 </div>
               </div>
-            </article>
-          ))}
-        </div>
+            </div>
 
-        {/* Scroll hint */}
-        <div className="text-center mt-4">
-          <p className="text-[10px] tracking-[0.5em] text-pink-300/20 uppercase animate-pulse">
-            Scroll to explore &rarr;
-          </p>
-        </div>
-      </main>
+            {/* Section divider */}
+            {i < PLACEHOLDER_GAMES.length - 1 && (
+              <div className="absolute bottom-0 left-[10%] right-[10%] h-px"
+                style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)' }}
+              />
+            )}
+          </section>
+        );
+      })}
 
       {/* Footer */}
-      <footer className="relative z-10 px-8 py-8 text-center border-t border-white/5">
-        <p className="text-[10px] tracking-[0.5em] text-pink-400/20 uppercase">
-          Model Tracker &mdash; Vapor Dashboard Showcase
+      <footer className="relative z-10 px-8 py-12 text-center" style={{ background: '#0a0714' }}>
+        <p className="text-[10px] tracking-[0.5em] text-white/10 uppercase">
+          Model Tracker &mdash; Vapor Dashboard Full Bleed
         </p>
       </footer>
     </div>

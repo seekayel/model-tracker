@@ -4,147 +4,191 @@ import { PLACEHOLDER_GAMES } from '../data';
 import PlaceholderImage from '../components/PlaceholderImage';
 
 /**
- * V2 — NEON ARCADE: Spotlight Carousel
- * A single-focus spotlight layout. One featured game large in the center
- * with a horizontal strip of thumbnails below. CRT + neon aesthetic.
+ * V2 — NEON ARCADE: "Model Deathmatch"
+ *
+ * DESIGN CONCEPT: Head-to-head comparison. The entire layout is split-screen,
+ * letting you pit two models against each other. Games grouped by model with
+ * a neon-lit "VS" divider. It's confrontational, competitive, electric.
+ *
+ * TYPOGRAPHY: Syne for headings (geometric, aggressive). DM Mono for data.
+ *
+ * BOLD CHOICE: Two-column model comparison is the ONLY interaction.
+ * You pick a left model and a right model. Everything else is subordinate.
  */
 export default function V2Gallery() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const game = PLACEHOLDER_GAMES[activeIndex];
+  const models = [...new Set(PLACEHOLDER_GAMES.map(g => g.model))];
+  const [leftModel, setLeftModel] = useState(models[0]);
+  const [rightModel, setRightModel] = useState(models[1]);
+
+  const leftGames = PLACEHOLDER_GAMES.filter(g => g.model === leftModel);
+  const rightGames = PLACEHOLDER_GAMES.filter(g => g.model === rightModel);
+  const leftAvg = leftGames.length ? (leftGames.reduce((a, g) => a + g.rating, 0) / leftGames.length) : 0;
+  const rightAvg = rightGames.length ? (rightGames.reduce((a, g) => a + g.rating, 0) / rightGames.length) : 0;
+
+  function GameCard({ game, align }: { game: typeof PLACEHOLDER_GAMES[0]; align: 'left' | 'right' }) {
+    return (
+      <div className={`group flex gap-4 ${align === 'right' ? 'flex-row-reverse text-right' : ''}`}>
+        <div className="flex-shrink-0 w-24 h-24 md:w-32 md:h-24 rounded-lg overflow-hidden border border-white/10 relative">
+          <PlaceholderImage seed={game.id} className="w-full h-full object-cover saturate-150 brightness-110 group-hover:scale-110 transition-transform duration-500" />
+          <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 20px rgba(0,0,0,0.4)' }} />
+        </div>
+        <div className="flex-1 min-w-0 py-1">
+          <h3 className="text-sm font-bold text-white/90 truncate" style={{ fontFamily: '"Syne", sans-serif' }}>
+            {game.title}
+          </h3>
+          <p className="text-[10px] text-white/25 mt-1 line-clamp-2 leading-relaxed">
+            {game.description}
+          </p>
+          <div className="flex items-center gap-2 mt-2" style={{ justifyContent: align === 'right' ? 'flex-end' : 'flex-start' }}>
+            {game.tags.map(tag => (
+              <span key={tag} className="text-[8px] uppercase tracking-widest text-cyan-400/30">{tag}</span>
+            ))}
+            <span className="text-[10px] text-yellow-400 font-bold ml-auto">{game.rating}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#08080f] text-white relative overflow-hidden flex flex-col">
-      {/* Scanline overlay */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50 opacity-[0.04]"
-        style={{
-          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255,255,255,0.08) 1px, rgba(255,255,255,0.08) 2px)',
-        }}
+    <div
+      className="min-h-screen text-white relative overflow-hidden"
+      style={{
+        fontFamily: '"DM Mono", monospace',
+        background: '#050509',
+      }}
+    >
+      {/* Vertical center divider glow */}
+      <div className="fixed top-0 bottom-0 left-1/2 -translate-x-1/2 w-px z-20 pointer-events-none hidden md:block"
+        style={{ background: 'linear-gradient(180deg, transparent, rgba(255,0,100,0.4) 30%, rgba(255,0,100,0.4) 70%, transparent)' }}
       />
-
-      {/* Animated glow behind featured game */}
-      <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] rounded-full blur-[200px] pointer-events-none transition-colors duration-1000"
-        style={{
-          background: activeIndex % 3 === 0
-            ? 'radial-gradient(ellipse, rgba(168,85,247,0.25), transparent 70%)'
-            : activeIndex % 3 === 1
-            ? 'radial-gradient(ellipse, rgba(6,182,212,0.25), transparent 70%)'
-            : 'radial-gradient(ellipse, rgba(244,63,94,0.25), transparent 70%)',
-        }}
+      <div className="fixed top-0 bottom-0 left-1/2 -translate-x-1/2 w-20 z-10 pointer-events-none hidden md:block"
+        style={{ background: 'radial-gradient(ellipse, rgba(255,0,100,0.08), transparent 70%)' }}
       />
 
       {/* Header */}
-      <header className="relative z-10 px-8 pt-8 pb-4 flex items-center justify-between border-b border-purple-500/20">
-        <Link
-          to="/"
-          className="text-purple-400 text-sm tracking-widest uppercase hover:text-white transition-colors"
-        >
-          &larr; Home
-        </Link>
-        <h1
-          className="text-3xl md:text-5xl font-black tracking-tight"
-          style={{
-            background: 'linear-gradient(135deg, #a855f7, #06b6d4)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
-          NEON ARCADE
-        </h1>
-        <p className="text-[10px] tracking-[0.5em] text-purple-500 uppercase">V2 &mdash; Spotlight</p>
+      <header className="relative z-30 px-6 md:px-10 pt-8 pb-4">
+        <div className="flex items-center justify-between">
+          <Link to="/" className="text-[10px] tracking-[0.4em] uppercase text-red-400/50 hover:text-red-300 transition-colors">
+            &larr; Exit
+          </Link>
+          <div className="text-center">
+            <p className="text-[9px] tracking-[0.6em] uppercase text-white/20 mb-1">Gallery V2</p>
+            <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight" style={{ fontFamily: '"Syne", sans-serif' }}>
+              <span className="text-cyan-400">MODEL</span>
+              <span className="text-white/20 mx-2">/</span>
+              <span className="text-red-400">DEATHMATCH</span>
+            </h1>
+          </div>
+          <div className="w-16" />
+        </div>
       </header>
 
-      {/* Featured game */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 py-10">
-        <div className="w-full max-w-4xl">
-          {/* Main card */}
-          <div className="relative rounded-2xl border border-purple-500/40 bg-[#0f0f1a]/90 backdrop-blur-sm overflow-hidden shadow-2xl shadow-purple-500/20">
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              {/* Image side */}
-              <div className="relative overflow-hidden">
-                <PlaceholderImage
-                  seed={game.id}
-                  className="w-full h-full object-cover saturate-150 brightness-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0f0f1a]/80 hidden md:block" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f1a]/80 to-transparent md:hidden" />
-              </div>
-
-              {/* Info side */}
-              <div className="p-8 flex flex-col justify-center">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase bg-cyan-500/10 border border-cyan-500/30 px-3 py-1 rounded">
-                    {game.model}
-                  </span>
-                  <span className="text-[10px] font-mono text-yellow-400">
-                    &#9733; {game.rating}
-                  </span>
-                </div>
-                <h2
-                  className="text-4xl font-black mb-3 tracking-tight"
-                  style={{
-                    background: 'linear-gradient(135deg, #e2e8f0, #a855f7)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  {game.title}
-                </h2>
-                <p className="text-sm text-purple-200/50 leading-relaxed mb-6">
-                  {game.description}
-                </p>
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {game.tags.map(tag => (
-                    <span
-                      key={tag}
-                      className="text-[10px] uppercase tracking-wider border border-purple-500/30 text-purple-300/60 rounded-full px-3 py-1"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <button className="w-full py-3 rounded-xl text-sm uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 transition-all text-white shadow-lg shadow-purple-500/30">
-                  Insert Coin &rarr;
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Game counter */}
-          <div className="text-center mt-4 text-purple-500/40 text-xs tracking-widest">
-            {activeIndex + 1} / {PLACEHOLDER_GAMES.length}
-          </div>
-        </div>
-
-        {/* Thumbnail strip */}
-        <div className="w-full max-w-4xl mt-8 flex gap-3 overflow-x-auto pb-2 px-1">
-          {PLACEHOLDER_GAMES.map((g, i) => (
+      {/* Model selectors */}
+      <div className="relative z-30 grid grid-cols-1 md:grid-cols-2 gap-0">
+        {/* Left selector */}
+        <div className="px-6 md:px-10 py-4 flex flex-wrap gap-2 justify-start border-b border-cyan-500/10">
+          {models.map(m => (
             <button
-              key={g.id}
-              onClick={() => setActiveIndex(i)}
-              className={`flex-shrink-0 w-28 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
-                i === activeIndex
-                  ? 'border-cyan-400 shadow-lg shadow-cyan-500/30 scale-105'
-                  : 'border-purple-500/20 opacity-50 hover:opacity-80 hover:border-purple-500/40'
+              key={m}
+              onClick={() => setLeftModel(m)}
+              className={`text-[10px] uppercase tracking-widest px-3 py-1.5 rounded transition-all ${
+                leftModel === m
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                  : 'text-white/20 border border-white/5 hover:text-white/50'
               }`}
             >
-              <PlaceholderImage seed={g.id} className="w-full h-auto saturate-150" />
-              <div className="bg-[#0f0f1a] px-2 py-1.5">
-                <p className="text-[9px] font-bold truncate text-white/80">{g.title}</p>
-                <p className="text-[8px] text-purple-400/50 truncate">{g.model}</p>
-              </div>
+              {m}
             </button>
           ))}
         </div>
-      </main>
+        {/* Right selector */}
+        <div className="px-6 md:px-10 py-4 flex flex-wrap gap-2 justify-end border-b border-red-500/10">
+          {models.map(m => (
+            <button
+              key={m}
+              onClick={() => setRightModel(m)}
+              className={`text-[10px] uppercase tracking-widest px-3 py-1.5 rounded transition-all ${
+                rightModel === m
+                  ? 'bg-red-500/20 text-red-300 border border-red-500/40'
+                  : 'text-white/20 border border-white/5 hover:text-white/50'
+              }`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-purple-500/20 px-8 py-4 text-center">
-        <p className="text-[10px] tracking-[0.5em] text-purple-500/30 uppercase">
-          Model Tracker &mdash; Neon Arcade Spotlight
-        </p>
-      </footer>
+      {/* VS Header with model names */}
+      <div className="relative z-30 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center px-6 md:px-10 py-8">
+        {/* Left model */}
+        <div>
+          <h2 className="text-3xl md:text-5xl font-black tracking-tight" style={{
+            fontFamily: '"Syne", sans-serif',
+            color: '#00e5ff',
+            textShadow: '0 0 30px rgba(0,229,255,0.3)',
+          }}>
+            {leftModel}
+          </h2>
+          <div className="flex items-center gap-4 mt-2">
+            <span className="text-[10px] text-white/20">{leftGames.length} games</span>
+            <span className="text-[10px] text-cyan-400/60">avg {leftAvg.toFixed(1)}</span>
+          </div>
+        </div>
+
+        {/* VS */}
+        <div className="hidden md:flex items-center justify-center px-8">
+          <span
+            className="text-4xl font-black"
+            style={{
+              fontFamily: '"Syne", sans-serif',
+              color: '#ff0064',
+              textShadow: '0 0 40px rgba(255,0,100,0.5), 0 0 80px rgba(255,0,100,0.2)',
+            }}
+          >
+            VS
+          </span>
+        </div>
+
+        {/* Right model */}
+        <div className="text-right mt-6 md:mt-0">
+          <h2 className="text-3xl md:text-5xl font-black tracking-tight" style={{
+            fontFamily: '"Syne", sans-serif',
+            color: '#ff0064',
+            textShadow: '0 0 30px rgba(255,0,100,0.3)',
+          }}>
+            {rightModel}
+          </h2>
+          <div className="flex items-center gap-4 mt-2 justify-end">
+            <span className="text-[10px] text-red-400/60">avg {rightAvg.toFixed(1)}</span>
+            <span className="text-[10px] text-white/20">{rightGames.length} games</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Two-column game lists */}
+      <main className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-0 px-6 md:px-10 pb-20">
+        {/* Left column */}
+        <div className="space-y-4 pr-0 md:pr-8 pb-8 md:pb-0">
+          {leftGames.length === 0 && (
+            <p className="text-[10px] text-white/15 uppercase tracking-widest">No games for this model</p>
+          )}
+          {leftGames.map(game => (
+            <GameCard key={game.id} game={game} align="left" />
+          ))}
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-4 pl-0 md:pl-8 border-t md:border-t-0 md:border-l border-white/5 pt-8 md:pt-0">
+          {rightGames.length === 0 && (
+            <p className="text-[10px] text-white/15 uppercase tracking-widest text-right">No games for this model</p>
+          )}
+          {rightGames.map(game => (
+            <GameCard key={game.id} game={game} align="right" />
+          ))}
+        </div>
+      </main>
     </div>
   );
 }

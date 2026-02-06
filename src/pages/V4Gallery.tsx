@@ -3,7 +3,7 @@ import { PLACEHOLDER_GAMES } from '../data';
 import PlaceholderImage from '../components/PlaceholderImage';
 
 /**
- * V4 — VAPOR DASHBOARD
+ * V4 — VAPOR DASHBOARD: Frosted Grid
  * Vaporwave-inspired data dashboard with gradient meshes, frosted glass
  * cards, pastel synthetics, and playful geometric accents.
  */
@@ -13,7 +13,6 @@ export default function V4Gallery() {
       className="min-h-screen text-white relative"
       style={{
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)',
-        fontFamily: '"Inter", system-ui, sans-serif',
       }}
     >
       {/* Mesh overlay shapes */}
@@ -32,7 +31,7 @@ export default function V4Gallery() {
           &larr; Home
         </Link>
         <div className="text-center">
-          <p className="text-[10px] uppercase tracking-[0.6em] text-white/50">Gallery V4</p>
+          <p className="text-[10px] uppercase tracking-[0.6em] text-white/50">V4 &mdash; Frosted Grid</p>
           <h1 className="text-4xl md:text-6xl font-black tracking-tight drop-shadow-lg">
             VAPOR DASH
           </h1>
@@ -76,7 +75,6 @@ export default function V4Gallery() {
 
               {/* Content */}
               <div className="p-5">
-                {/* Model badge */}
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] bg-white/20 rounded-full px-3 py-1 backdrop-blur-sm">
                     {game.model}
@@ -94,7 +92,6 @@ export default function V4Gallery() {
                   {game.description}
                 </p>
 
-                {/* Tags */}
                 <div className="flex flex-wrap gap-1.5 mb-4">
                   {game.tags.map(tag => (
                     <span
@@ -106,7 +103,6 @@ export default function V4Gallery() {
                   ))}
                 </div>
 
-                {/* CTA */}
                 <button className="w-full py-2.5 rounded-xl text-xs uppercase tracking-widest font-bold bg-white/20 border border-white/30 backdrop-blur-sm hover:bg-white/30 transition-all">
                   Play Now
                 </button>

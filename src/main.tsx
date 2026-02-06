@@ -8,6 +8,7 @@ import V2Gallery from './pages/V2Gallery';
 import V3Gallery from './pages/V3Gallery';
 import V4Gallery from './pages/V4Gallery';
 import V5Gallery from './pages/V5Gallery';
+import V6Gallery from './pages/V6Gallery';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -19,6 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/v3" element={<V3Gallery />} />
         <Route path="/v4" element={<V4Gallery />} />
         <Route path="/v5" element={<V5Gallery />} />
+        <Route path="/v6" element={<V6Gallery />} />
       </Routes>
     </HashRouter>
   </React.StrictMode>,

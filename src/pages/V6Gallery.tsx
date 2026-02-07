@@ -72,7 +72,8 @@ export default function V6Gallery() {
             <div className="absolute inset-0">
               <PlaceholderImage
                 seed={game.id}
-                className="w-full h-full object-cover saturate-[1.6] brightness-75 scale-105"
+                cover
+                className="absolute inset-0 w-full h-full saturate-[1.6] brightness-75"
               />
               {/* Gradient overlays */}
               <div className="absolute inset-0" style={{

@@ -1,6 +1,7 @@
 interface PlaceholderImageProps {
   seed: string;
   className?: string;
+  cover?: boolean;
 }
 
 const PALETTES = [
@@ -23,7 +24,7 @@ function hashCode(str: string): number {
   return Math.abs(hash);
 }
 
-export default function PlaceholderImage({ seed, className = '' }: PlaceholderImageProps) {
+export default function PlaceholderImage({ seed, className = '', cover = false }: PlaceholderImageProps) {
   const h = hashCode(seed);
   const palette = PALETTES[h % PALETTES.length];
   const angle = (h % 360);
@@ -37,6 +38,7 @@ export default function PlaceholderImage({ seed, className = '' }: PlaceholderIm
   return (
     <svg
       viewBox="0 0 300 200"
+      preserveAspectRatio={cover ? 'xMidYMid slice' : undefined}
       className={className}
       xmlns="http://www.w3.org/2000/svg"
     >

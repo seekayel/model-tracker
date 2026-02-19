@@ -1,0 +1,22 @@
+{
+  "security": {
+    "folderTrust": {
+      "enabled": false
+    }
+  },
+  "tools": {
+    "core": [
+      "run_shell_command",
+      "write_file",
+      "read_file",
+      "list_directory",
+      "glob",
+      "grep_search",
+      "replace",
+      "web_fetch"
+    ]
+  },
+  "experimental": {
+    "skills": false
+  }
+}

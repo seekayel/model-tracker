@@ -45,6 +45,8 @@ bun run dev         # start local dev server
 bun run build:games # build each game in games/ and copy to public/games/
 bun run build       # build games, then build gallery site into dist/
 bun run preview     # preview the production build
+bun run agent:harness      # run one-shot agent matrix using config/prompt files
+bun run agent:harness:dry  # validate matrix/commands without executing agents
 ```
 
 ## Add Or Update Gallery Entries

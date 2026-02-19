@@ -24,3 +24,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Agent harness artifacts
+runs/
+games/.backups/

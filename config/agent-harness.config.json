@@ -1,0 +1,75 @@
+{
+  "defaults": {
+    "promptPath": "prompts/game-clone.template.md",
+    "outputBaseDir": "games",
+    "runsBaseDir": "runs",
+    "backupBaseDir": "games/.backups",
+    "timeoutMinutes": 45
+  },
+  "games": [
+    {
+      "key": "galaga",
+      "name": "Galaga"
+    },
+    {
+      "key": "super-mario-brothers",
+      "name": "Super Mario Brothers"
+    },
+    {
+      "key": "pong",
+      "name": "Pong"
+    },
+    {
+      "key": "gauntlet",
+      "name": "Gauntlet"
+    },
+    {
+      "key": "civilization",
+      "name": "Civilization"
+    }
+  ],
+  "providers": [
+    {
+      "id": "claude",
+      "binary": "claude",
+      "models": [
+        {
+          "key": "opus-4.5",
+          "id": "claude-opus-4-5"
+        },
+        {
+          "key": "opus-4.6",
+          "id": "claude-opus-4-6"
+        },
+        {
+          "key": "sonnet-4.6",
+          "id": "claude-sonnet-4-6"
+        }
+      ]
+    },
+    {
+      "id": "codex",
+      "binary": "codex",
+      "models": [
+        {
+          "key": "codex-5.2",
+          "id": "codex-5.2"
+        },
+        {
+          "key": "codex-5.3",
+          "id": "codex-5.3"
+        }
+      ]
+    },
+    {
+      "id": "gemini",
+      "binary": "gemini",
+      "models": [
+        {
+          "key": "gemini-3-pro-preview",
+          "id": "gemini-3-pro-preview"
+        }
+      ]
+    }
+  ]
+}

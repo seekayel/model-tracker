@@ -28,3 +28,4 @@ Thumbs.db
 # Agent harness artifacts
 runs/
 games/.backups/
+.envrc

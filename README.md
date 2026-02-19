@@ -49,6 +49,48 @@ bun run agent:harness      # run one-shot agent matrix using config/prompt files
 bun run agent:harness:dry  # validate matrix/commands without executing agents
 ```
 
+## Run The Generation Harness (Human)
+
+1. Install and authenticate the required CLIs:
+   - `claude` (Anthropic)
+   - `codex` (OpenAI)
+   - `gemini` (Google)
+2. If you use a local `.envrc` for Claude auth tokens, load it in your shell before running the harness:
+
+```bash
+set -a
+source .envrc
+set +a
+```
+
+3. Validate matrix/config/prompt wiring without spending model calls:
+
+```bash
+bun run agent:harness:dry
+```
+
+4. Run the full configured matrix:
+
+```bash
+bun run agent:harness
+```
+
+5. Run a filtered smoke test (example: Pong with Claude + Gemini):
+
+```bash
+bun run agent:harness -- --games pong --models claude:opus-4.6,gemini:gemini-3-pro-preview --timeout-min 20
+```
+
+Harness inputs:
+- Models/games/provider matrix: `config/agent-harness.config.json`
+- Prompt template: `prompts/game-clone.template.md`
+
+Harness outputs:
+- Generated game projects: `games/<provider>-<model-key>-<game-key>/`
+- Per-run artifacts and summary: `runs/<batch-id>/`
+- Run summary JSON: `runs/<batch-id>/summary.json`
+- Backups of overwritten game folders: `games/.backups/`
+
 ## Add Or Update Gallery Entries
 
 Edit `src/data.ts` and add/update objects in `PLACEHOLDER_GAMES`.

@@ -71,7 +71,10 @@ export default function HomePage({ rows }: HomePageProps) {
                 {String(index + 1).padStart(2, '0')} / {String(playableRows.length).padStart(2, '0')}
               </p>
 
-              <span className="home-chip">{row.game.key}</span>
+              <span className="home-chip">
+                {row.game.key}
+                {row.game.releaseYear !== null ? ` • ${row.game.releaseYear}` : ''}
+              </span>
 
               <h2>{row.game.name}</h2>
 

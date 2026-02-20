@@ -32,7 +32,10 @@ export default function GridPage({ models, rows }: GridPageProps) {
                 <tr key={row.game.key}>
                   <th scope="row">
                     <span className="matrix-game-name">{row.game.name}</span>
-                    <span className="matrix-game-key">{row.game.key}</span>
+                    <span className="matrix-game-key">
+                      {row.game.key}
+                      {row.game.releaseYear !== null ? ` • ${row.game.releaseYear}` : ''}
+                    </span>
                   </th>
                   {row.cells.map((cell) => (
                     <td key={`${row.game.key}:${cell.model.id}`}>

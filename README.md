@@ -75,10 +75,21 @@ bun run agent:harness:dry
 bun run agent:harness
 ```
 
-5. Run a filtered smoke test (example: Pong with Claude + Gemini):
+Default behavior notes:
+- Existing `games/<provider>-<model-key>-<game-key>/` outputs are skipped (not regenerated).
+- Use `--force` when you want to regenerate existing outputs.
+- Games are executed in release-year order (oldest to newest).
+
+5. Run a filtered smoke test (example: Pong with Claude + Gemini 3.1 Pro):
 
 ```bash
-bun run agent:harness -- --games pong --models claude:opus-4.6,gemini:gemini-3-pro-preview --timeout-min 20
+bun run agent:harness -- --games pong --models claude:opus-4.6,gemini:gemini-3.1-pro --timeout-min 20
+```
+
+6. Force regeneration for existing outputs:
+
+```bash
+bun run agent:harness -- --games pong --force
 ```
 
 Harness inputs:
@@ -89,7 +100,7 @@ Harness outputs:
 - Generated game projects: `games/<provider>-<model-key>-<game-key>/`
 - Per-run artifacts and summary: `runs/<batch-id>/`
 - Run summary JSON: `runs/<batch-id>/summary.json`
-- Backups of overwritten game folders: `games/.backups/`
+- Backups of overwritten game folders when regenerating (`--force`): `games/.backups/`
 
 ## Add Or Update Gallery Entries
 

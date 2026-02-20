@@ -24,6 +24,7 @@ type HarnessConfig = {
 type GameSpec = {
   key: string;
   name: string;
+  releaseYear: number;
 };
 
 type ModelSpec = {
@@ -46,6 +47,7 @@ type Args = {
   models?: ModelFilter[];
   timeoutMinutes?: number;
   dryRun: boolean;
+  force: boolean;
 };
 
 type ModelFilter = {
@@ -96,6 +98,8 @@ type RunResult = {
   durationMs: number;
   agent: CommandRunResult | null;
   validation: ValidationSummary | null;
+  skipped: boolean;
+  skipReason: 'existing_output' | null;
   failureCategory: 'none' | 'agent_error' | 'build_error' | 'smoke_error' | 'timeout';
 };
 
@@ -113,6 +117,7 @@ function usage(): string {
     '  --agents <csv>          Comma-separated provider ids (claude,codex,gemini)',
     '  --models <csv>          Comma-separated model filters; supports key or provider:key',
     '  --timeout-min <n>       Timeout in minutes per agent run',
+    '  --force                 Regenerate outputs even if target game folder already exists',
     '  --dry-run               Resolve matrix and write commands without executing CLIs',
     '  -h, --help              Show help',
     '',
@@ -120,6 +125,7 @@ function usage(): string {
     '  bun run agent:harness',
     '  bun run agent:harness -- --games pong,galaga --agents codex',
     '  bun run agent:harness -- --models claude:opus-4.6,codex:codex-5.3',
+    '  bun run agent:harness -- --games pong --force',
   ].join('\n');
 }
 
@@ -147,6 +153,7 @@ function parseArgs(argv: string[]): Args {
   const parsed: Args = {
     configPath: DEFAULT_CONFIG_PATH,
     dryRun: false,
+    force: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -159,6 +166,11 @@ function parseArgs(argv: string[]): Args {
 
     if (arg === '--dry-run') {
       parsed.dryRun = true;
+      continue;
+    }
+
+    if (arg === '--force') {
+      parsed.force = true;
       continue;
     }
 
@@ -552,22 +564,34 @@ function determineFailureCategory(
 }
 
 function resolveMatrix(config: HarnessConfig, args: Args): MatrixItem[] {
+  const requestedGames = args.games?.map(normalizeKey) ?? null;
   const selectedGames = config.games.filter((game) => {
-    if (!args.games || args.games.length === 0) {
+    if (!requestedGames || requestedGames.length === 0) {
       return true;
     }
-    return args.games.map(normalizeKey).includes(normalizeKey(game.key));
+    return requestedGames.includes(normalizeKey(game.key));
   });
 
   if (selectedGames.length === 0) {
     throw new Error('No games matched the requested filters.');
   }
 
+  const gamesInRunOrder = selectedGames
+    .map((game, index) => ({ game, index }))
+    .sort((a, b) => {
+      if (a.game.releaseYear !== b.game.releaseYear) {
+        return a.game.releaseYear - b.game.releaseYear;
+      }
+      return a.index - b.index;
+    })
+    .map((entry) => entry.game);
+
+  const requestedAgents = args.agents?.map(normalizeKey) ?? null;
   const selectedProviders = config.providers.filter((provider) => {
-    if (!args.agents || args.agents.length === 0) {
+    if (!requestedAgents || requestedAgents.length === 0) {
       return true;
     }
-    return args.agents.map(normalizeKey).includes(normalizeKey(provider.id));
+    return requestedAgents.includes(normalizeKey(provider.id));
   });
 
   if (selectedProviders.length === 0) {
@@ -576,7 +600,7 @@ function resolveMatrix(config: HarnessConfig, args: Args): MatrixItem[] {
 
   const matrix: MatrixItem[] = [];
 
-  for (const game of selectedGames) {
+  for (const game of gamesInRunOrder) {
     for (const provider of selectedProviders) {
       const selectedModels = provider.models.filter((model) => {
         if (!args.models || args.models.length === 0) {
@@ -636,11 +660,19 @@ async function main(): Promise<void> {
     const geminiSystemSettingsPath = resolve(ROOT, 'config/gemini-system-settings.json');
 
     const matrix = resolveMatrix(config, args);
+    const executableMatrix = args.force
+      ? matrix
+      : matrix.filter((item) => {
+        const outputDirName = `${slug(item.provider.id)}-${slug(item.model.key)}-${slug(item.game.key)}`;
+        return !existsSync(join(outputBaseDir, outputDirName));
+      });
 
     if (!args.dryRun) {
-      const selectedBinaries = [...new Set(matrix.map((item) => item.provider.binary))];
-      selectedBinaries.push('npm');
-      await ensureTooling(selectedBinaries);
+      if (executableMatrix.length > 0) {
+        const selectedBinaries = [...new Set(executableMatrix.map((item) => item.provider.binary))];
+        selectedBinaries.push('npm');
+        await ensureTooling(selectedBinaries);
+      }
     }
 
     const runBatchTimestamp = fileTimestamp(new Date());
@@ -659,6 +691,10 @@ async function main(): Promise<void> {
     console.log(`Harness batch: ${runBatchId}`);
     console.log(`Matrix items: ${matrix.length}`);
     console.log(`Dry run: ${args.dryRun ? 'yes' : 'no'}`);
+    console.log(`Force regeneration: ${args.force ? 'yes' : 'no'}`);
+    if (!args.dryRun) {
+      console.log(`Matrix items requiring execution: ${executableMatrix.length}`);
+    }
 
     const summary: RunResult[] = [];
 
@@ -672,14 +708,20 @@ async function main(): Promise<void> {
 
       await mkdir(artifactDir, { recursive: true });
 
+      const runStart = Date.now();
+      const outputDirExists = existsSync(outputDir);
+
       if (!args.dryRun) {
-        if (existsSync(outputDir)) {
+        if (outputDirExists && args.force) {
           const backupName = `${outputDirName}.${runBatchId}`;
           const backupPath = join(backupBaseDir, backupName);
           await rename(outputDir, backupPath);
+          await mkdir(outputDir, { recursive: true });
         }
 
-        await mkdir(outputDir, { recursive: true });
+        if (!outputDirExists) {
+          await mkdir(outputDir, { recursive: true });
+        }
       }
 
       const renderedPrompt = renderPrompt(promptTemplate, {
@@ -716,10 +758,13 @@ async function main(): Promise<void> {
 
       let agentResult: CommandRunResult | null = null;
       let validation: ValidationSummary | null = null;
+      let skipped = false;
+      let skipReason: RunResult['skipReason'] = null;
 
-      const runStart = Date.now();
-
-      if (!args.dryRun) {
+      if (!args.dryRun && !args.force && outputDirExists) {
+        skipped = true;
+        skipReason = 'existing_output';
+      } else if (!args.dryRun) {
         agentResult = await runProcess(
           {
             command: commandSpec.command,
@@ -736,7 +781,7 @@ async function main(): Promise<void> {
         validation = await runValidation(outputDir, artifactDir, timeoutMs);
       }
 
-      const failureCategory = args.dryRun
+      const failureCategory = args.dryRun || skipped
         ? 'none'
         : determineFailureCategory(agentResult, validation);
 
@@ -750,6 +795,8 @@ async function main(): Promise<void> {
         durationMs: Date.now() - runStart,
         agent: agentResult,
         validation,
+        skipped,
+        skipReason,
         failureCategory,
       };
 
@@ -757,7 +804,9 @@ async function main(): Promise<void> {
       await writeFile(join(artifactDir, 'result.json'), JSON.stringify(runResult, null, 2), 'utf8');
       await writeFile(join(artifactDir, 'validation.json'), JSON.stringify(validation, null, 2), 'utf8');
 
-      if (args.dryRun) {
+      if (skipped) {
+        console.log(`  skipped: output exists (use --force to regenerate)`);
+      } else if (args.dryRun) {
         console.log(`  dry-run complete`);
       } else {
         console.log(`  category: ${failureCategory}`);
@@ -768,7 +817,10 @@ async function main(): Promise<void> {
     await writeFile(summaryPath, JSON.stringify(summary, null, 2), 'utf8');
 
     const successCount = summary.filter((entry) => entry.failureCategory === 'none').length;
-    console.log(`\nCompleted ${summary.length} runs; success=${successCount}, failed=${summary.length - successCount}`);
+    const skippedCount = summary.filter((entry) => entry.skipped).length;
+    console.log(
+      `\nCompleted ${summary.length} runs; success=${successCount}, failed=${summary.length - successCount}, skipped=${skippedCount}`,
+    );
     console.log(`Summary: ${summaryPath}`);
 
     if (!args.dryRun && successCount !== summary.length) {

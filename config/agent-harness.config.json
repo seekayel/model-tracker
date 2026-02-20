@@ -9,23 +9,28 @@
   "games": [
     {
       "key": "galaga",
-      "name": "Galaga"
+      "name": "Galaga",
+      "releaseYear": 1981
     },
     {
       "key": "super-mario-brothers",
-      "name": "Super Mario Brothers"
+      "name": "Super Mario Brothers",
+      "releaseYear": 1985
     },
     {
       "key": "pong",
-      "name": "Pong"
+      "name": "Pong",
+      "releaseYear": 1972
     },
     {
       "key": "gauntlet",
-      "name": "Gauntlet"
+      "name": "Gauntlet",
+      "releaseYear": 1985
     },
     {
       "key": "civilization",
-      "name": "Civilization"
+      "name": "Civilization",
+      "releaseYear": 1991
     }
   ],
   "providers": [
@@ -65,6 +70,10 @@
       "id": "gemini",
       "binary": "gemini",
       "models": [
+        {
+          "key": "gemini-3.1-pro",
+          "id": "gemini-2.5-pro"
+        },
         {
           "key": "gemini-3-pro-preview",
           "id": "gemini-3-pro-preview"

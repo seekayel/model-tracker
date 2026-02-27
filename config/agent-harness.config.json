@@ -58,11 +58,11 @@
       "models": [
         {
           "key": "codex-5.2",
-          "id": "codex-5.2"
+          "id": "gpt-5.2-codex"
         },
         {
           "key": "codex-5.3",
-          "id": "codex-5.3"
+          "id": "gpt-5.3-codex"
         }
       ]
     },

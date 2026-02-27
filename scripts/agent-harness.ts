@@ -481,6 +481,29 @@ async function listSubdirectories(directory: string): Promise<string[]> {
   return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
 }
 
+async function isGeneratedProjectDir(directory: string): Promise<boolean> {
+  if (!existsSync(directory)) {
+    return false;
+  }
+
+  try {
+    const directoryStat = await stat(directory);
+    if (!directoryStat.isDirectory()) {
+      return false;
+    }
+
+    const packageJsonPath = join(directory, 'package.json');
+    if (!existsSync(packageJsonPath)) {
+      return false;
+    }
+
+    const packageJsonStat = await stat(packageJsonPath);
+    return packageJsonStat.isFile();
+  } catch {
+    return false;
+  }
+}
+
 function findLastContiguousVariant(existingIndices: Set<number>): number {
   let current = 0;
   while (existingIndices.has(current + 1)) {
@@ -499,7 +522,7 @@ async function buildExecutionPlan(
   const comboDir = join(outputBaseDir, comboDirName);
   const comboDirExists = existsSync(comboDir);
   const baselineDir = join(comboDir, BASELINE_VARIANT_ID);
-  const baselineExists = existsSync(baselineDir) && (await stat(baselineDir)).isDirectory();
+  const baselineExists = await isGeneratedProjectDir(baselineDir);
 
   const subdirectories = await listSubdirectories(comboDir);
   const existingIndices = new Set<number>();
@@ -507,11 +530,18 @@ async function buildExecutionPlan(
 
   for (const subdirectory of subdirectories) {
     const variantIndex = parseVariantFolderName(subdirectory);
-    if (variantIndex !== null) {
-      existingIndices.add(variantIndex);
-      if (!existingFolderByIndex.has(variantIndex)) {
-        existingFolderByIndex.set(variantIndex, subdirectory);
-      }
+    if (variantIndex === null) {
+      continue;
+    }
+
+    const variantDir = join(comboDir, subdirectory);
+    if (!(await isGeneratedProjectDir(variantDir))) {
+      continue;
+    }
+
+    existingIndices.add(variantIndex);
+    if (!existingFolderByIndex.has(variantIndex)) {
+      existingFolderByIndex.set(variantIndex, subdirectory);
     }
   }
 

@@ -7,6 +7,9 @@ Goal:
 Hard constraints:
 - No backend server, no storage API, no database, no authentication.
 - Build output must be static files only (HTML/CSS/JS and assets).
+- All runtime and asset URLs must work from a nested path using relative URLs only.
+  - Do not use root-absolute paths like `/assets/...` or `/src/...`.
+  - Configure the build tool for relative hosting (for Vite, set `base: './'`).
 - Use `npm` for dependency management and scripts.
 - Must include scripts in `package.json`:
   - `dev`

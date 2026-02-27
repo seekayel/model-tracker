@@ -26,6 +26,48 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   civilization: 'Civilization',
 };
 
+const HARNESS_GAME_KEYS = [
+  'pong',
+  'galaga',
+  'gauntlet',
+  'super-mario-brothers',
+  'civilization',
+] as const;
+
+type HarnessModelSpec = {
+  providerId: string;
+  modelKey: string;
+  aliases?: string[];
+};
+
+const HARNESS_MODELS: HarnessModelSpec[] = [
+  { providerId: 'claude', modelKey: 'opus-4-5' },
+  { providerId: 'claude', modelKey: 'opus-4-6' },
+  { providerId: 'claude', modelKey: 'sonnet-4-6' },
+  { providerId: 'gemini', modelKey: 'gemini-3-1-pro' },
+  {
+    providerId: 'gemini',
+    modelKey: 'gemini-3-1-pro-preview',
+    aliases: ['gemini-3-pro-preview'],
+  },
+  { providerId: 'codex', modelKey: 'codex-5-2' },
+  { providerId: 'codex', modelKey: 'codex-5-3' },
+];
+
+const HARNESS_MODEL_ORDER = new Map(
+  HARNESS_MODELS.map((model, index) => [`${model.providerId}:${model.modelKey}`, index]),
+);
+
+const HARNESS_MODEL_ALIAS_TO_CANONICAL = new Map<string, string>();
+for (const model of HARNESS_MODELS) {
+  const canonical = `${model.providerId}:${model.modelKey}`;
+  HARNESS_MODEL_ALIAS_TO_CANONICAL.set(canonical, canonical);
+
+  for (const alias of model.aliases ?? []) {
+    HARNESS_MODEL_ALIAS_TO_CANONICAL.set(`${model.providerId}:${alias}`, canonical);
+  }
+}
+
 type ParsedCombo = {
   providerId: string;
   modelKey: string;
@@ -124,6 +166,16 @@ function normalizeKey(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function canonicalizeModelKey(providerId: string, modelKey: string): string {
+  const normalizedProvider = normalizeKey(providerId);
+  const normalizedModel = normalizeKey(modelKey);
+  const canonical =
+    HARNESS_MODEL_ALIAS_TO_CANONICAL.get(`${normalizedProvider}:${normalizedModel}`) ??
+    `${normalizedProvider}:${normalizedModel}`;
+
+  return canonical.split(':')[1];
+}
+
 function toTitleCaseFromSlug(value: string): string {
   return value
     .split('-')
@@ -178,62 +230,6 @@ function extractComboFromManifestPath(modulePath: string): string | null {
   return match?.[1] ?? null;
 }
 
-function inferCommonGameKeys(remainders: string[]): string[] {
-  const suffixToPrefixes = new Map<string, Set<string>>();
-
-  for (const remainder of remainders) {
-    const parts = remainder.split('-').filter(Boolean);
-    for (let splitIndex = 1; splitIndex < parts.length; splitIndex++) {
-      const modelPrefix = parts.slice(0, splitIndex).join('-');
-      const gameSuffix = parts.slice(splitIndex).join('-');
-
-      if (!modelPrefix || !gameSuffix) {
-        continue;
-      }
-
-      const prefixes = suffixToPrefixes.get(gameSuffix) ?? new Set<string>();
-      prefixes.add(modelPrefix);
-      suffixToPrefixes.set(gameSuffix, prefixes);
-    }
-  }
-
-  return [...suffixToPrefixes.entries()]
-    .filter(([, prefixes]) => prefixes.size >= 2)
-    .map(([gameKey]) => gameKey)
-    .sort((a, b) => b.length - a.length);
-}
-
-function splitModelAndGameKey(remainder: string, knownGameKeys: string[]): { modelKey: string; gameKey: string } | null {
-  const uniqueCandidates = [...new Set(knownGameKeys.map(normalizeKey).filter(Boolean))].sort(
-    (a, b) => b.length - a.length,
-  );
-
-  for (const candidate of uniqueCandidates) {
-    const suffix = `-${candidate}`;
-    if (!remainder.endsWith(suffix)) {
-      continue;
-    }
-
-    const modelKey = remainder.slice(0, -suffix.length);
-    if (modelKey.length > 0) {
-      return {
-        modelKey,
-        gameKey: candidate,
-      };
-    }
-  }
-
-  const parts = remainder.split('-').filter(Boolean);
-  if (parts.length < 2) {
-    return null;
-  }
-
-  return {
-    modelKey: parts.slice(0, -1).join('-'),
-    gameKey: parts[parts.length - 1],
-  };
-}
-
 function parseComboFolder(folderName: string, knownGameKeys: string[]): ParsedCombo | null {
   const normalized = normalizeKey(folderName);
   const segments = normalized.split('-').filter(Boolean);
@@ -243,24 +239,47 @@ function parseComboFolder(folderName: string, knownGameKeys: string[]): ParsedCo
 
   const providerId = segments[0];
   const remainder = segments.slice(1).join('-');
-  const split = splitModelAndGameKey(remainder, knownGameKeys);
-  if (!split) {
-    return null;
+
+  const gameCandidates = [...new Set(knownGameKeys.map(normalizeKey).filter(Boolean))].sort((a, b) => b.length - a.length);
+
+  for (const gameKey of gameCandidates) {
+    const suffix = `-${gameKey}`;
+    if (!remainder.endsWith(suffix)) {
+      continue;
+    }
+
+    const rawModelKey = remainder.slice(0, -suffix.length);
+    if (!rawModelKey) {
+      continue;
+    }
+
+    return {
+      providerId,
+      modelKey: canonicalizeModelKey(providerId, rawModelKey),
+      gameKey,
+    };
   }
 
-  return {
-    providerId,
-    modelKey: split.modelKey,
-    gameKey: split.gameKey,
-  };
+  return null;
 }
 
 function compareModels(a: CatalogModel, b: CatalogModel): number {
-  if (a.providerId !== b.providerId) {
-    return a.providerId.localeCompare(b.providerId, 'en', { numeric: true });
+  const aOrder = HARNESS_MODEL_ORDER.get(a.id);
+  const bOrder = HARNESS_MODEL_ORDER.get(b.id);
+
+  if (aOrder !== undefined || bOrder !== undefined) {
+    if (aOrder === undefined) {
+      return 1;
+    }
+    if (bOrder === undefined) {
+      return -1;
+    }
+    if (aOrder !== bOrder) {
+      return aOrder - bOrder;
+    }
   }
 
-  return a.modelKey.localeCompare(b.modelKey, 'en', { numeric: true });
+  return a.id.localeCompare(b.id, 'en', { numeric: true });
 }
 
 function compareGames(a: CatalogGame, b: CatalogGame): number {
@@ -337,17 +356,7 @@ function buildCatalog(): CatalogData {
     .filter((path) => !path.includes('/.backups/'))
     .sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
 
-  const comboFolders = [...new Set(
-    packagePaths
-      .map((projectPath) => projectPath.split('/')[0])
-      .filter((folder) => Boolean(folder) && !folder.startsWith('.')),
-  )];
-
-  const remainders = comboFolders
-    .map((folderName) => normalizeKey(folderName).split('-').slice(1).join('-'))
-    .filter((remainder) => remainder.length > 0);
-
-  const knownGameKeys = [...Object.keys(GAME_RELEASE_YEARS), ...inferCommonGameKeys(remainders)];
+  const knownGameKeys = [...new Set([...HARNESS_GAME_KEYS, ...Object.keys(GAME_RELEASE_YEARS)])];
 
   const manifestModules = import.meta.glob('../games/*/variants.json', { eager: true }) as Record<string, unknown>;
   const manifestByCombo = new Map<string, VariantManifest>();
@@ -418,35 +427,22 @@ function buildCatalog(): CatalogData {
     })
     .filter((entry): entry is RepoEntry => entry !== null);
 
-  const models: CatalogModel[] = [...new Map(
-    entries.map((entry) => {
-      const modelId = `${entry.providerId}:${entry.modelKey}`;
-      return [
-        modelId,
-        {
-          id: modelId,
-          providerId: entry.providerId,
-          modelKey: entry.modelKey,
-          modelId: entry.modelKey,
-          label: modelId,
-        } satisfies CatalogModel,
-      ];
-    }),
-  ).values()].sort(compareModels);
+  const models: CatalogModel[] = HARNESS_MODELS.map((model) => {
+    const modelId = `${model.providerId}:${model.modelKey}`;
+    return {
+      id: modelId,
+      providerId: model.providerId,
+      modelKey: model.modelKey,
+      modelId: model.modelKey,
+      label: modelId,
+    } satisfies CatalogModel;
+  }).sort(compareModels);
 
-  const games: CatalogGame[] = [...new Map(
-    entries.map((entry) => {
-      const releaseYear = GAME_RELEASE_YEARS[entry.gameKey] ?? null;
-      return [
-        entry.gameKey,
-        {
-          key: entry.gameKey,
-          name: GAME_DISPLAY_NAMES[entry.gameKey] ?? toTitleCaseFromSlug(entry.gameKey),
-          releaseYear,
-        } satisfies CatalogGame,
-      ];
-    }),
-  ).values()].sort(compareGames);
+  const games: CatalogGame[] = HARNESS_GAME_KEYS.map((gameKey) => ({
+    key: gameKey,
+    name: GAME_DISPLAY_NAMES[gameKey] ?? toTitleCaseFromSlug(gameKey),
+    releaseYear: GAME_RELEASE_YEARS[gameKey] ?? null,
+  })).sort(compareGames);
 
   const variantTitleById = new Map<string, string>();
   variantTitleById.set('baseline', 'Baseline');
@@ -637,13 +633,13 @@ function buildCatalog(): CatalogData {
 export function findComboDetail(gameKey: string, providerId: string, modelKey: string): CatalogComboDetail | null {
   const normalizedGameKey = normalizeKey(gameKey);
   const normalizedProviderId = normalizeKey(providerId);
-  const normalizedModelKey = normalizeKey(modelKey);
+  const normalizedModelKey = canonicalizeModelKey(normalizedProviderId, modelKey);
 
   return catalogData.comboDetails.find(
     (detail) =>
       normalizeKey(detail.game.key) === normalizedGameKey &&
       normalizeKey(detail.model.providerId) === normalizedProviderId &&
-      normalizeKey(detail.model.modelKey) === normalizedModelKey,
+      canonicalizeModelKey(detail.model.providerId, detail.model.modelKey) === normalizedModelKey,
   ) ?? null;
 }
 

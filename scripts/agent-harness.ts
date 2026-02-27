@@ -146,6 +146,9 @@ type RunResult = {
 const ROOT = cwd();
 const DEFAULT_CONFIG_PATH = 'config/agent-harness.config.json';
 const BASELINE_VARIANT_ID = 'baseline';
+const LEGACY_MODEL_KEY_ALIASES = new Map<string, string[]>([
+  ['gemini:gemini-3.1-pro-preview', ['gemini-3-pro-preview']],
+]);
 
 function usage(): string {
   return [
@@ -349,6 +352,31 @@ function slug(value: string): string {
     .replace(/-+$/, '');
 }
 
+function comboDirName(providerId: string, modelKey: string, gameKey: string): string {
+  return `${slug(providerId)}-${slug(modelKey)}-${slug(gameKey)}`;
+}
+
+function resolveComboDirName(item: MatrixItem, outputBaseDir: string): string {
+  const canonicalName = comboDirName(item.provider.id, item.model.key, item.game.key);
+  const canonicalPath = join(outputBaseDir, canonicalName);
+  if (existsSync(canonicalPath)) {
+    return canonicalName;
+  }
+
+  const aliasKey = `${normalizeKey(item.provider.id)}:${normalizeKey(item.model.key)}`;
+  const aliases = LEGACY_MODEL_KEY_ALIASES.get(aliasKey) ?? [];
+
+  for (const alias of aliases) {
+    const legacyName = comboDirName(item.provider.id, alias, item.game.key);
+    const legacyPath = join(outputBaseDir, legacyName);
+    if (existsSync(legacyPath)) {
+      return legacyName;
+    }
+  }
+
+  return canonicalName;
+}
+
 function fileTimestamp(date: Date): string {
   return date.toISOString().replace(/[:.]/g, '-');
 }
@@ -467,7 +495,7 @@ async function buildExecutionPlan(
   variants: VariantDefinition[],
   overwriteVariants: boolean,
 ): Promise<ComboExecutionPlan> {
-  const comboDirName = `${slug(item.provider.id)}-${slug(item.model.key)}-${slug(item.game.key)}`;
+  const comboDirName = resolveComboDirName(item, outputBaseDir);
   const comboDir = join(outputBaseDir, comboDirName);
   const comboDirExists = existsSync(comboDir);
   const baselineDir = join(comboDir, BASELINE_VARIANT_ID);
@@ -1005,7 +1033,7 @@ async function main(): Promise<void> {
 
     for (let i = 0; i < matrix.length; i++) {
       const item = matrix[i];
-      const comboDirName = `${slug(item.provider.id)}-${slug(item.model.key)}-${slug(item.game.key)}`;
+      const comboDirName = resolveComboDirName(item, outputBaseDir);
       const plan = plansByCombo.get(comboDirName);
 
       if (!plan) {

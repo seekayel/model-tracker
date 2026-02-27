@@ -105,7 +105,7 @@ Each generated step attempts:
 ## Notes
 
 - Model IDs are config-managed and intentionally explicit.
-- Gemini models in config currently include `gemini-3.1-pro` and `gemini-3-pro-preview`.
+- Gemini models in config currently include `gemini-3.1-pro` and `gemini-3.1-pro-preview`.
 - Gemini runs with `--extensions ""` and `GEMINI_CLI_SYSTEM_SETTINGS_PATH=config/gemini-system-settings.json`
   so tool access is deterministic regardless of user-global Gemini settings.
 - Update model IDs in config when provider naming changes.

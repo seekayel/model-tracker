@@ -1,0 +1,29 @@
+{
+  "name": "baseline",
+  "version": "1.0.0",
+  "description": "A browser-based game inspired by Civilization.",
+  "type": "module",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "civilization",
+    "strategy",
+    "game",
+    "phaser",
+    "vite"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  }
+}

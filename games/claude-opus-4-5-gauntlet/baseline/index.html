@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gauntlet Clone</title>
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <div id="start-screen" class="screen">
+      <h1>GAUNTLET</h1>
+      <p class="subtitle">Dungeon Crawler</p>
+      <div class="character-select">
+        <h2>Select Your Hero</h2>
+        <div class="characters">
+          <button class="char-btn" data-class="warrior">
+            <span class="char-icon warrior-icon"></span>
+            <span class="char-name">Warrior</span>
+            <span class="char-stats">High Armor</span>
+          </button>
+          <button class="char-btn" data-class="valkyrie">
+            <span class="char-icon valkyrie-icon"></span>
+            <span class="char-name">Valkyrie</span>
+            <span class="char-stats">Balanced</span>
+          </button>
+          <button class="char-btn" data-class="wizard">
+            <span class="char-icon wizard-icon"></span>
+            <span class="char-name">Wizard</span>
+            <span class="char-stats">Magic Power</span>
+          </button>
+          <button class="char-btn" data-class="elf">
+            <span class="char-icon elf-icon"></span>
+            <span class="char-name">Elf</span>
+            <span class="char-stats">Fast Speed</span>
+          </button>
+        </div>
+      </div>
+      <p class="instructions">Use WASD or Arrow Keys to move, SPACE to attack</p>
+    </div>
+
+    <div id="game-screen" class="screen hidden">
+      <div id="hud">
+        <div class="hud-left">
+          <span id="player-class">Warrior</span>
+          <span id="health-label">Health: <span id="health">100</span></span>
+        </div>
+        <div class="hud-center">
+          <span>Level: <span id="level">1</span></span>
+        </div>
+        <div class="hud-right">
+          <span>Score: <span id="score">0</span></span>
+          <span>Keys: <span id="keys">0</span></span>
+        </div>
+      </div>
+      <canvas id="game-canvas"></canvas>
+    </div>
+
+    <div id="game-over-screen" class="screen hidden">
+      <h1>GAME OVER</h1>
+      <p>Final Score: <span id="final-score">0</span></p>
+      <p>Level Reached: <span id="final-level">1</span></p>
+      <button id="restart-btn">Play Again</button>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

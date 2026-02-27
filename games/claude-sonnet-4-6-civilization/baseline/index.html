@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Civilization - Browser Strategy Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: 'Courier New', Courier, monospace;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #app {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top HUD ─────────────────────────────────────── */
+    #hud {
+      background: #161b22;
+      border-bottom: 2px solid #30363d;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-shrink: 0;
+      height: 48px;
+      z-index: 10;
+    }
+
+    .hud-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #f0c040;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .hud-sep { color: #444; }
+
+    .hud-stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+    }
+
+    .hud-icon { font-size: 14px; }
+    .hud-val  { color: #e6edf3; font-weight: bold; }
+    .hud-label { color: #8b949e; font-size: 11px; }
+
+    .hud-turn {
+      margin-left: auto;
+      font-size: 13px;
+      color: #8b949e;
+    }
+    .hud-turn span { color: #f0c040; font-weight: bold; }
+
+    /* ── Main area ─────────────────────────────────────── */
+    #main-area {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Canvas ──────────────────────────────────────── */
+    #game-canvas {
+      flex: 1;
+      display: block;
+      cursor: default;
+    }
+
+    /* ── Right sidebar ──────────────────────────────── */
+    #sidebar {
+      width: 220px;
+      background: #161b22;
+      border-left: 2px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section {
+      padding: 10px;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .sidebar-section h3 {
+      font-size: 11px;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-section p {
+      font-size: 12px;
+      color: #e6edf3;
+      line-height: 1.5;
+    }
+
+    .action-btn {
+      display: block;
+      width: 100%;
+      padding: 6px 8px;
+      margin: 3px 0;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #e6edf3;
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: left;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .action-btn:hover:not(:disabled) { background: #2d333b; border-color: #f0c040; }
+    .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .action-btn.primary {
+      background: #1f6feb;
+      border-color: #388bfd;
+      font-weight: bold;
+      text-align: center;
+    }
+    .action-btn.primary:hover:not(:disabled) { background: #388bfd; }
+    .action-btn.danger {
+      background: #6e1a1a;
+      border-color: #f85149;
+    }
+    .action-btn.danger:hover:not(:disabled) { background: #a32929; }
+    .action-btn.success {
+      background: #1a4731;
+      border-color: #3fb950;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 2px 0;
+    }
+    .stat-key { color: #8b949e; }
+    .stat-val { color: #e6edf3; font-weight: bold; }
+
+    .prod-bar-wrap {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 2px;
+      height: 8px;
+      margin-top: 4px;
+    }
+    .prod-bar {
+      background: #f0c040;
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.2s;
+    }
+
+    /* ── Bottom status bar ───────────────────────────── */
+    #statusbar {
+      background: #161b22;
+      border-top: 1px solid #30363d;
+      padding: 4px 12px;
+      font-size: 11px;
+      color: #8b949e;
+      flex-shrink: 0;
+      height: 24px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ── Overlays ─────────────────────────────────────── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.82);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .overlay-box {
+      background: #161b22;
+      border: 2px solid #f0c040;
+      border-radius: 8px;
+      padding: 32px 40px;
+      text-align: center;
+      min-width: 360px;
+      max-width: 480px;
+    }
+
+    .overlay-box h1 {
+      font-size: 28px;
+      color: #f0c040;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .overlay-box h2 {
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
+    .overlay-box p {
+      font-size: 13px;
+      color: #8b949e;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .overlay-box .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin: 16px 0;
+      text-align: left;
+      font-size: 12px;
+    }
+    .controls-grid dt { color: #f0c040; }
+    .controls-grid dd { color: #8b949e; }
+
+    .big-btn {
+      padding: 12px 32px;
+      background: #1f6feb;
+      border: 2px solid #388bfd;
+      color: #fff;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 6px;
+      margin-top: 12px;
+      transition: background 0.15s;
+    }
+    .big-btn:hover { background: #388bfd; }
+
+    .win-text  { color: #3fb950; }
+    .lose-text { color: #f85149; }
+
+    #notification {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #21262d;
+      border: 1px solid #f0c040;
+      color: #f0c040;
+      padding: 8px 20px;
+      border-radius: 4px;
+      font-size: 13px;
+      z-index: 50;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #notification.show { opacity: 1; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Top HUD -->
+    <div id="hud">
+      <span class="hud-title">Civilization</span>
+      <span class="hud-sep">|</span>
+      <div class="hud-stat">
+        <span class="hud-icon">🌾</span>
+        <span class="hud-val" id="hud-food">0</span>
+        <span class="hud-label">food</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-icon">⚙️</span>
+        <span class="hud-val" id="hud-prod">0</span>
+        <span class="hud-label">prod</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-icon">💰</span>
+        <span class="hud-val" id="hud-gold">0</span>
+        <span class="hud-label">gold</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-icon">🔬</span>
+        <span class="hud-val" id="hud-science">0</span>
+        <span class="hud-label">science</span>
+      </div>
+      <div class="hud-turn">Turn <span id="hud-turn">1</span> / 100</div>
+    </div>
+
+    <div id="main-area">
+      <!-- Game canvas -->
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Right sidebar -->
+      <div id="sidebar">
+        <div class="sidebar-section" id="sidebar-selection">
+          <h3>Selection</h3>
+          <p id="sel-name" style="color:#f0c040;font-size:14px;font-weight:bold;margin-bottom:4px;">—</p>
+          <div id="sel-stats"></div>
+          <div id="sel-actions" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="sidebar-section" id="sidebar-city-prod" style="display:none;">
+          <h3>City Production</h3>
+          <div id="city-prod-info"></div>
+          <div id="city-prod-btns" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="sidebar-section" id="sidebar-tech">
+          <h3>Research</h3>
+          <div id="tech-info"></div>
+          <div id="tech-btns" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="sidebar-section">
+          <h3>Turn</h3>
+          <button class="action-btn primary" id="btn-end-turn">End Turn ➤</button>
+        </div>
+
+        <div class="sidebar-section">
+          <h3>Controls</h3>
+          <p style="font-size:11px;color:#8b949e;line-height:1.8;">
+            Click unit to select<br>
+            Click tile to move/attack<br>
+            WASD / Arrows to scroll<br>
+            F to found city (settler)<br>
+            Esc to deselect<br>
+            Space = End Turn
+          </p>
+        </div>
+
+        <div class="sidebar-section">
+          <h3>Legend</h3>
+          <div id="legend" style="font-size:11px;color:#8b949e;line-height:1.8;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom status bar -->
+    <div id="statusbar" id="statusbar">Click a unit or tile to select it.</div>
+  </div>
+
+  <!-- Start menu overlay -->
+  <div class="overlay" id="overlay-start">
+    <div class="overlay-box">
+      <h1>Civilization</h1>
+      <p style="color:#f0c040;font-size:13px;margin-bottom:16px;">Browser Strategy Game</p>
+      <p>Lead your civilization from a single settler to world domination.<br>
+         Found cities, build armies, research technology, and conquer your rivals.</p>
+      <dl class="controls-grid">
+        <dt>Click</dt><dd>Select unit / move</dd>
+        <dt>WASD</dt><dd>Scroll map</dd>
+        <dt>F</dt><dd>Found city (Settler)</dd>
+        <dt>Space</dt><dd>End turn</dd>
+        <dt>Esc</dt><dd>Deselect</dd>
+        <dt>Attack</dt><dd>Click enemy unit</dd>
+      </dl>
+      <p>Capture all enemy cities to win. Survive 100 turns for a score victory.</p>
+      <button class="big-btn" id="btn-start">Start Game</button>
+    </div>
+  </div>
+
+  <!-- Game over overlay -->
+  <div class="overlay hidden" id="overlay-gameover">
+    <div class="overlay-box">
+      <h2 id="go-title">Game Over</h2>
+      <p id="go-reason"></p>
+      <p id="go-score"></p>
+      <button class="big-btn" id="btn-restart">Play Again</button>
+    </div>
+  </div>
+
+  <!-- Notification toast -->
+  <div id="notification"></div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

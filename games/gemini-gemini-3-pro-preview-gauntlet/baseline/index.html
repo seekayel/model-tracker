@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gauntlet Clone</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="ui-layer">
+            <div id="hud" class="hidden">
+                <div>Health: <span id="health-val">2000</span></div>
+                <div>Score: <span id="score-val">0</span></div>
+                <div>Keys: <span id="keys-val">0</span></div>
+                <div>Level: <span id="level-val">1</span></div>
+            </div>
+            <div id="screens">
+                <div id="start-screen" class="screen">
+                    <h1>GAUNTLET</h1>
+                    <p>WASD to move. Arrow keys to shoot.</p>
+                    <p>Health decays over time. Find food!</p>
+                    <button id="start-btn">Start Game</button>
+                </div>
+                <div id="game-over-screen" class="screen hidden">
+                    <h1>GAME OVER</h1>
+                    <p>Score: <span id="final-score">0</span></p>
+                    <button id="restart-btn">Restart</button>
+                </div>
+            </div>
+        </div>
+        <canvas id="game-canvas"></canvas>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>

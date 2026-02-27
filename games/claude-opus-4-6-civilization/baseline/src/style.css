@@ -1,0 +1,273 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #1a1a2e;
+  color: #eee;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Start Screen ── */
+#start-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+#start-screen h1 {
+  font-size: 4rem;
+  letter-spacing: 0.5em;
+  color: #e6b422;
+  text-shadow: 0 0 20px rgba(230, 180, 34, 0.4);
+  margin-bottom: 0.5rem;
+}
+
+#start-screen .subtitle {
+  font-size: 1.1rem;
+  color: #8899aa;
+  margin-bottom: 2rem;
+  font-style: italic;
+}
+
+#start-screen button, #victory-screen button {
+  padding: 14px 48px;
+  font-size: 1.3rem;
+  background: #e6b422;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+  margin-bottom: 2rem;
+}
+
+#start-screen button:hover, #victory-screen button:hover {
+  background: #f0c040;
+  transform: scale(1.05);
+}
+
+.controls-info {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  max-width: 400px;
+}
+
+.controls-info h3 {
+  color: #e6b422;
+  margin-bottom: 0.8rem;
+  font-size: 1rem;
+}
+
+.controls-info ul {
+  list-style: none;
+}
+
+.controls-info li {
+  padding: 4px 0;
+  font-size: 0.9rem;
+  color: #aab;
+}
+
+kbd {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  margin-right: 6px;
+}
+
+/* ── Game Screen ── */
+#game-screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#game-canvas {
+  flex: 1;
+  display: block;
+  cursor: crosshair;
+}
+
+/* ── HUD ── */
+#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+#hud-top {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  font-size: 0.9rem;
+  pointer-events: auto;
+}
+
+#hud-top span {
+  white-space: nowrap;
+}
+
+#hud-turn { color: #e6b422; font-weight: bold; }
+#hud-gold { color: #ffd700; }
+#hud-science { color: #64b5f6; }
+#hud-score { color: #81c784; }
+
+#btn-end-turn {
+  margin-left: auto;
+  padding: 6px 16px;
+  background: #e6b422;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.85rem;
+  pointer-events: auto;
+}
+
+#btn-end-turn:hover {
+  background: #f0c040;
+}
+
+#hud-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+  min-height: 60px;
+  top: auto;
+}
+
+.info-panel {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.info-panel strong {
+  color: #e6b422;
+  font-size: 1rem;
+}
+
+.info-panel span {
+  font-size: 0.85rem;
+  color: #bbb;
+}
+
+.info-panel .fortified {
+  color: #64b5f6;
+  font-weight: bold;
+}
+
+.info-panel .warning {
+  color: #ff9800;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.action-label {
+  color: #888;
+  font-size: 0.8rem;
+  margin-right: 4px;
+}
+
+.action-btn {
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ddd;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s;
+}
+
+.action-btn:hover {
+  background: rgba(230, 180, 34, 0.3);
+  border-color: #e6b422;
+  color: #fff;
+}
+
+/* ── Minimap ── */
+#minimap-container {
+  position: absolute;
+  bottom: 80px;
+  right: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #111;
+}
+
+#minimap-canvas {
+  display: block;
+  cursor: pointer;
+}
+
+/* ── Victory Screen ── */
+#victory-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  text-align: center;
+}
+
+#victory-screen h1 {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+#victory-message {
+  font-size: 1.2rem;
+  color: #aab;
+  margin-bottom: 1rem;
+}
+
+#victory-score {
+  font-size: 1rem;
+  color: #888;
+  margin-bottom: 2rem;
+}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Mario Brothers Clone</title>
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <div id="start-screen" class="overlay">
+      <h1>SUPER MARIO</h1>
+      <p>Press ENTER to Start</p>
+      <div class="controls-info">
+        <p>Arrow Keys / WASD - Move</p>
+        <p>Space / Up / W - Jump</p>
+      </div>
+    </div>
+    <div id="game-over-screen" class="overlay hidden">
+      <h1>GAME OVER</h1>
+      <p class="final-score">Score: 0</p>
+      <p>Press ENTER to Restart</p>
+    </div>
+    <div id="win-screen" class="overlay hidden">
+      <h1>YOU WIN!</h1>
+      <p class="final-score">Score: 0</p>
+      <p>Press ENTER to Play Again</p>
+    </div>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

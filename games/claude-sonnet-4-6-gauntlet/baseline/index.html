@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gauntlet</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="gameCanvas"></canvas>
+    <div id="hud">
+      <div id="hud-left">
+        <span id="hud-class">Warrior</span>
+        <span id="hud-health">♥ 2000</span>
+      </div>
+      <div id="hud-center">
+        <span id="hud-level">Level 1</span>
+      </div>
+      <div id="hud-right">
+        <span id="hud-score">Score: 0</span>
+      </div>
+    </div>
+    <div id="overlay" class="overlay">
+      <div class="overlay-content">
+        <h1>GAUNTLET</h1>
+        <p class="subtitle">Dungeon Crawler</p>
+        <div id="overlay-body">
+          <div class="controls-info">
+            <h3>Controls</h3>
+            <p>WASD / Arrow Keys — Move</p>
+            <p>Space / Enter — Shoot</p>
+            <p>Shift + Direction — Shoot in direction</p>
+            <p>E / Q — Use Magic / Super Shot</p>
+          </div>
+        </div>
+        <button id="startBtn" class="btn-primary">Start Game</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

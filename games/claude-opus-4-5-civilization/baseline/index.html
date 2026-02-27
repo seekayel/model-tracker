@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Civilization Clone</title>
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="start-screen" class="screen">
+      <h1>Civilization</h1>
+      <p class="subtitle">A Turn-Based Strategy Game</p>
+      <div class="menu">
+        <button id="start-btn">Start New Game</button>
+        <div class="controls-info">
+          <h3>Controls</h3>
+          <ul>
+            <li><kbd>Arrow Keys</kbd> / <kbd>WASD</kbd> - Move camera</li>
+            <li><kbd>Click</kbd> - Select unit/city</li>
+            <li><kbd>M</kbd> - Move selected unit</li>
+            <li><kbd>B</kbd> - Build city (Settler)</li>
+            <li><kbd>F</kbd> - Fortify unit</li>
+            <li><kbd>Space</kbd> / <kbd>Enter</kbd> - End turn</li>
+            <li><kbd>Escape</kbd> - Deselect</li>
+            <li><kbd>1-5</kbd> - Build units in city</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="game-screen" class="screen hidden">
+      <canvas id="game-canvas"></canvas>
+
+      <div id="hud">
+        <div id="top-bar">
+          <div id="resources">
+            <span id="gold-display">Gold: 0</span>
+            <span id="science-display">Science: 0</span>
+            <span id="turn-display">Turn: 1</span>
+          </div>
+          <div id="player-info">
+            <span id="player-name">Your Empire</span>
+          </div>
+        </div>
+
+        <div id="minimap-container">
+          <canvas id="minimap"></canvas>
+        </div>
+
+        <div id="info-panel" class="hidden">
+          <h3 id="info-title">Info</h3>
+          <div id="info-content"></div>
+          <div id="info-actions"></div>
+        </div>
+
+        <div id="tech-panel" class="hidden">
+          <h3>Research</h3>
+          <div id="tech-list"></div>
+        </div>
+
+        <div id="end-turn-container">
+          <button id="end-turn-btn">End Turn</button>
+        </div>
+      </div>
+
+      <div id="notification" class="hidden"></div>
+    </div>
+
+    <div id="victory-screen" class="screen hidden">
+      <h1 id="victory-title">Victory!</h1>
+      <p id="victory-message"></p>
+      <button id="restart-btn">Play Again</button>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>

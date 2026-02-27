@@ -1,0 +1,21 @@
+{
+  "name": "galaga-clone",
+  "version": "1.0.0",
+  "description": "A browser-based Galaga clone built with vanilla JavaScript and Vite",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  },
+  "keywords": [
+    "galaga",
+    "game",
+    "arcade",
+    "shooter"
+  ],
+  "license": "MIT"
+}

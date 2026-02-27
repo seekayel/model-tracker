@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  background-color: #5c94fc;
+  font-family: 'Press Start 2P', cursive;
+  color: white;
+  text-align: center;
+  overflow: hidden;
+}
+
+.game-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.game-world {
+  position: absolute;
+  transform-origin: top left;
+}

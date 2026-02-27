@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Civilization</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="start-screen">
+      <h1>CIVILIZATION</h1>
+      <p class="subtitle">Build an empire to stand the test of time</p>
+      <div class="menu-options">
+        <button id="btn-start">New Game</button>
+        <div class="controls-info">
+          <h3>Controls</h3>
+          <ul>
+            <li><kbd>Click</kbd> Select tile / unit</li>
+            <li><kbd>WASD</kbd> / <kbd>Arrow Keys</kbd> Move selected unit</li>
+            <li><kbd>B</kbd> Build city (Settler)</li>
+            <li><kbd>F</kbd> Fortify unit</li>
+            <li><kbd>Space</kbd> Skip unit turn</li>
+            <li><kbd>Enter</kbd> End turn</li>
+            <li><kbd>1-3</kbd> Produce unit in city</li>
+            <li><kbd>Esc</kbd> Deselect</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div id="game-screen" style="display:none;">
+      <canvas id="game-canvas"></canvas>
+      <div id="hud">
+        <div id="hud-top">
+          <span id="hud-turn">Turn: 1</span>
+          <span id="hud-gold">Gold: 0</span>
+          <span id="hud-science">Science: 0</span>
+          <span id="hud-score">Score: 0</span>
+          <button id="btn-end-turn">End Turn (Enter)</button>
+        </div>
+        <div id="hud-bottom">
+          <div id="hud-info"></div>
+          <div id="hud-actions"></div>
+        </div>
+      </div>
+      <div id="minimap-container">
+        <canvas id="minimap-canvas"></canvas>
+      </div>
+    </div>
+    <div id="victory-screen" style="display:none;">
+      <h1 id="victory-title">Victory!</h1>
+      <p id="victory-message"></p>
+      <p id="victory-score"></p>
+      <button id="btn-restart">Play Again</button>
+    </div>
+  </div>
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>

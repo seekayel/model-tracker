@@ -1,0 +1,14 @@
+{
+  "name": "galaga-clone",
+  "version": "1.0.0",
+  "description": "Browser-based Galaga clone",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "typescript": "^5.3.0"
+  }
+}

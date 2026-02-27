@@ -1,77 +1,111 @@
 #!/usr/bin/env node
 
 /**
- * Build all games in the games/ directory.
+ * Build all playable game projects under games/.
  *
- * For each subdirectory with a package.json:
+ * For each directory containing package.json (excluding backups/hidden dirs):
  *   1. bun install
  *   2. bun run build
- *   3. Copy dist/ -> public/games/<game-name>/
+ *   3. Copy dist/ -> public/games/<relative-path>/
  */
 
 import { readdirSync, existsSync, cpSync, mkdirSync, statSync } from 'fs';
-import { join } from 'path';
+import { join, relative } from 'path';
 import { execSync } from 'child_process';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const GAMES_DIR = join(ROOT, 'games');
 const OUTPUT_DIR = join(ROOT, 'public', 'games');
 
-// Ensure output dir exists
+const SKIP_DIRS = new Set(['node_modules', 'dist', '.backups']);
+
+function shouldSkipDirectory(name) {
+  return name.startsWith('.') || SKIP_DIRS.has(name);
+}
+
+function collectGameProjectDirs(directory) {
+  const projectDirs = [];
+
+  const entries = readdirSync(directory, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    if (shouldSkipDirectory(entry.name)) {
+      continue;
+    }
+
+    const childDir = join(directory, entry.name);
+    const pkgPath = join(childDir, 'package.json');
+
+    if (existsSync(pkgPath)) {
+      projectDirs.push(childDir);
+      continue;
+    }
+
+    projectDirs.push(...collectGameProjectDirs(childDir));
+  }
+
+  return projectDirs;
+}
+
+function toPosixPath(path) {
+  return path.split('\\').join('/');
+}
+
 mkdirSync(OUTPUT_DIR, { recursive: true });
 
-const entries = readdirSync(GAMES_DIR);
+const gameProjectDirs = collectGameProjectDirs(GAMES_DIR)
+  .sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
 
 let built = 0;
 let failed = 0;
 
-for (const entry of entries) {
-  const gameDir = join(GAMES_DIR, entry);
+for (const gameDir of gameProjectDirs) {
+  const relativeGamePath = toPosixPath(relative(GAMES_DIR, gameDir));
 
-  // Skip non-directories and hidden files
-  if (!statSync(gameDir).isDirectory()) continue;
-  if (entry.startsWith('.')) continue;
-
-  const pkgPath = join(gameDir, 'package.json');
-  if (!existsSync(pkgPath)) {
-    console.log(`  SKIP  ${entry} (no package.json)`);
+  // Skip if path escapes games/ due to symlink or unexpected input
+  if (relativeGamePath.startsWith('..')) {
     continue;
   }
 
-  console.log(`\n  BUILD  ${entry}`);
+  const distDir = join(gameDir, 'dist');
+  const outputGameDir = join(OUTPUT_DIR, relativeGamePath);
+
+  if (!statSync(gameDir).isDirectory()) {
+    continue;
+  }
+
+  console.log(`\n  BUILD  ${relativeGamePath}`);
   console.log(`  ${'─'.repeat(40)}`);
 
   try {
-    // Install dependencies
-    console.log(`  Installing dependencies...`);
+    console.log('  Installing dependencies...');
     execSync('bun install', { cwd: gameDir, stdio: 'inherit' });
 
-    // Build
-    console.log(`  Running build...`);
+    console.log('  Running build...');
     execSync('bun run build', { cwd: gameDir, stdio: 'inherit' });
 
-    // Copy dist to public/games/<name>
-    const distDir = join(gameDir, 'dist');
     if (!existsSync(distDir)) {
-      console.error(`  ERROR  ${entry}: build did not produce a dist/ directory`);
+      console.error(`  ERROR  ${relativeGamePath}: build did not produce a dist/ directory`);
       failed++;
       continue;
     }
 
-    const outputGameDir = join(OUTPUT_DIR, entry);
     mkdirSync(outputGameDir, { recursive: true });
     cpSync(distDir, outputGameDir, { recursive: true });
 
-    console.log(`  OK  ${entry} -> public/games/${entry}/`);
+    console.log(`  OK  ${relativeGamePath} -> public/games/${relativeGamePath}/`);
     built++;
   } catch (err) {
-    console.error(`  FAIL  ${entry}: ${err.message}`);
+    console.error(`  FAIL  ${relativeGamePath}: ${err.message}`);
     failed++;
   }
 }
 
 console.log(`\n  ${'═'.repeat(40)}`);
-console.log(`  Games built: ${built} | Failed: ${failed}`);
+console.log(`  Game projects built: ${built} | Failed: ${failed}`);
 
 if (failed > 0) {
   process.exit(1);

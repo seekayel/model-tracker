@@ -3,7 +3,7 @@
 import { spawn } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, rename, readdir, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { cwd, env, exit } from 'node:process';
 
@@ -48,6 +48,8 @@ type Args = {
   timeoutMinutes?: number;
   dryRun: boolean;
   force: boolean;
+  variantsFilePath?: string;
+  overwriteVariants: boolean;
 };
 
 type ModelFilter = {
@@ -88,44 +90,86 @@ type ValidationSummary = {
   pass: boolean;
 };
 
+type VariantDefinition = {
+  index: number;
+  id: string;
+  title: string;
+  slug: string;
+  folderName: string;
+  promptText: string;
+};
+
+type VariantManifest = {
+  schemaVersion: number;
+  generatedAt: string;
+  sourcePath: string | null;
+  variants: VariantDefinition[];
+};
+
+type PlanStep = {
+  variantId: string;
+  variantTitle: string;
+  variantFolder: string;
+  variantPromptText: string;
+  targetDir: string;
+  seedDir: string | null;
+};
+
+type ComboExecutionPlan = {
+  comboDirName: string;
+  comboDir: string;
+  comboDirExists: boolean;
+  baselineExists: boolean;
+  lastContiguousVariant: number;
+  steps: PlanStep[];
+};
+
 type RunResult = {
   runId: string;
   game: string;
   provider: string;
   modelKey: string;
   modelId: string;
+  comboDir: string;
   outputDir: string;
+  variantId: string | null;
+  variantTitle: string | null;
+  variantFolder: string | null;
   durationMs: number;
   agent: CommandRunResult | null;
   validation: ValidationSummary | null;
   skipped: boolean;
-  skipReason: 'existing_output' | null;
+  skipReason: 'existing_output' | 'up_to_date' | null;
   failureCategory: 'none' | 'agent_error' | 'build_error' | 'smoke_error' | 'timeout';
 };
 
 const ROOT = cwd();
 const DEFAULT_CONFIG_PATH = 'config/agent-harness.config.json';
+const BASELINE_VARIANT_ID = 'baseline';
 
 function usage(): string {
   return [
     'Usage: bun scripts/agent-harness.ts [options]',
     '',
     'Options:',
-    '  --config <path>         Path to harness config JSON (default: config/agent-harness.config.json)',
-    '  --prompt <path>         Override prompt template path',
-    '  --games <csv>           Comma-separated game keys',
-    '  --agents <csv>          Comma-separated provider ids (claude,codex,gemini)',
-    '  --models <csv>          Comma-separated model filters; supports key or provider:key',
-    '  --timeout-min <n>       Timeout in minutes per agent run',
-    '  --force                 Regenerate outputs even if target game folder already exists',
-    '  --dry-run               Resolve matrix and write commands without executing CLIs',
-    '  -h, --help              Show help',
+    '  --config <path>            Path to harness config JSON (default: config/agent-harness.config.json)',
+    '  --prompt <path>            Override prompt template path',
+    '  --games <csv>              Comma-separated game keys',
+    '  --agents <csv>             Comma-separated provider ids (claude,codex,gemini)',
+    '  --models <csv>             Comma-separated model filters; supports key or provider:key',
+    '  --variants-file <path>     Markdown file with ordered H2 variant requirements (## v1: ...)',
+    '  --overwrite-variants       Regenerate baseline and overwrite variant folders for each selected combo',
+    '  --force                    Alias for --overwrite-variants',
+    '  --timeout-min <n>          Timeout in minutes per agent run',
+    '  --dry-run                  Resolve matrix and write commands without executing CLIs',
+    '  -h, --help                 Show help',
     '',
     'Examples:',
     '  bun run agent:harness',
     '  bun run agent:harness -- --games pong,galaga --agents codex',
     '  bun run agent:harness -- --models claude:opus-4.6,codex:codex-5.3',
-    '  bun run agent:harness -- --games pong --force',
+    '  bun run agent:harness -- --games pong --variants-file prompts/game-variants.example.md',
+    '  bun run agent:harness -- --games pong --variants-file prompts/game-variants.example.md --overwrite-variants',
   ].join('\n');
 }
 
@@ -154,6 +198,7 @@ function parseArgs(argv: string[]): Args {
     configPath: DEFAULT_CONFIG_PATH,
     dryRun: false,
     force: false,
+    overwriteVariants: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -171,6 +216,12 @@ function parseArgs(argv: string[]): Args {
 
     if (arg === '--force') {
       parsed.force = true;
+      parsed.overwriteVariants = true;
+      continue;
+    }
+
+    if (arg === '--overwrite-variants') {
+      parsed.overwriteVariants = true;
       continue;
     }
 
@@ -199,6 +250,20 @@ function parseArgs(argv: string[]): Args {
 
     if (arg.startsWith('--prompt=')) {
       parsed.promptPath = arg.slice('--prompt='.length);
+      continue;
+    }
+
+    if (arg === '--variants-file') {
+      const next = argv[++i];
+      if (!next) {
+        throw new Error('Missing value for --variants-file');
+      }
+      parsed.variantsFilePath = next;
+      continue;
+    }
+
+    if (arg.startsWith('--variants-file=')) {
+      parsed.variantsFilePath = arg.slice('--variants-file='.length);
       continue;
     }
 
@@ -295,6 +360,209 @@ function renderPrompt(template: string, replacements: Record<string, string>): s
     rendered = rendered.split(token).join(value);
   }
   return rendered;
+}
+
+function parseVariantHeading(heading: string): { index: number; title: string } {
+  const trimmed = heading.trim();
+  const match = trimmed.match(/^v(\d+)(?:\s*[:\-]\s*(.+)|\s+(.+))?$/i);
+  if (!match) {
+    throw new Error(
+      `Invalid variant heading "${heading}". Expected format: "## v1: Title" in increasing order.`,
+    );
+  }
+
+  const index = Number.parseInt(match[1], 10);
+  if (!Number.isInteger(index) || index <= 0) {
+    throw new Error(`Invalid variant index in heading "${heading}".`);
+  }
+
+  const providedTitle = (match[2] ?? match[3] ?? '').trim();
+  return {
+    index,
+    title: providedTitle.length > 0 ? providedTitle : `Variant ${index}`,
+  };
+}
+
+function parseVariantsMarkdown(markdown: string): VariantDefinition[] {
+  const headingRegex = /^##\s+(.+)$/gm;
+  const headings: Array<{ heading: string; start: number; end: number }> = [];
+  let match: RegExpExecArray | null = null;
+
+  while ((match = headingRegex.exec(markdown)) !== null) {
+    headings.push({
+      heading: match[1].trim(),
+      start: match.index,
+      end: headingRegex.lastIndex,
+    });
+  }
+
+  if (headings.length === 0) {
+    throw new Error('Variants markdown must include at least one H2 section, e.g. "## v1: Harder Enemies".');
+  }
+
+  const variants: VariantDefinition[] = [];
+
+  for (let i = 0; i < headings.length; i++) {
+    const current = headings[i];
+    const next = headings[i + 1];
+
+    const parsedHeading = parseVariantHeading(current.heading);
+    const expectedIndex = i + 1;
+    if (parsedHeading.index !== expectedIndex) {
+      throw new Error(
+        `Variant headings must be contiguous and ordered (expected v${expectedIndex}, found v${parsedHeading.index}).`,
+      );
+    }
+
+    const bodyStart = current.end;
+    const bodyEnd = next ? next.start : markdown.length;
+    const promptText = markdown.slice(bodyStart, bodyEnd).trim();
+
+    const variantSlug = slug(parsedHeading.title) || `variant-${parsedHeading.index}`;
+    const id = `v${parsedHeading.index}`;
+
+    variants.push({
+      index: parsedHeading.index,
+      id,
+      title: parsedHeading.title,
+      slug: variantSlug,
+      folderName: `${id}-${variantSlug}`,
+      promptText,
+    });
+  }
+
+  return variants;
+}
+
+function parseVariantFolderName(folderName: string): number | null {
+  const match = normalizeKey(folderName).match(/^v(\d+)(?:-[a-z0-9-]+)?$/);
+  if (!match) {
+    return null;
+  }
+
+  const index = Number.parseInt(match[1], 10);
+  return Number.isInteger(index) && index > 0 ? index : null;
+}
+
+async function listSubdirectories(directory: string): Promise<string[]> {
+  if (!existsSync(directory)) {
+    return [];
+  }
+
+  const entries = await readdir(directory, { withFileTypes: true });
+  return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+}
+
+function findLastContiguousVariant(existingIndices: Set<number>): number {
+  let current = 0;
+  while (existingIndices.has(current + 1)) {
+    current += 1;
+  }
+  return current;
+}
+
+async function buildExecutionPlan(
+  item: MatrixItem,
+  outputBaseDir: string,
+  variants: VariantDefinition[],
+  overwriteVariants: boolean,
+): Promise<ComboExecutionPlan> {
+  const comboDirName = `${slug(item.provider.id)}-${slug(item.model.key)}-${slug(item.game.key)}`;
+  const comboDir = join(outputBaseDir, comboDirName);
+  const comboDirExists = existsSync(comboDir);
+  const baselineDir = join(comboDir, BASELINE_VARIANT_ID);
+  const baselineExists = existsSync(baselineDir) && (await stat(baselineDir)).isDirectory();
+
+  const subdirectories = await listSubdirectories(comboDir);
+  const existingIndices = new Set<number>();
+  const existingFolderByIndex = new Map<number, string>();
+
+  for (const subdirectory of subdirectories) {
+    const variantIndex = parseVariantFolderName(subdirectory);
+    if (variantIndex !== null) {
+      existingIndices.add(variantIndex);
+      if (!existingFolderByIndex.has(variantIndex)) {
+        existingFolderByIndex.set(variantIndex, subdirectory);
+      }
+    }
+  }
+
+  const lastContiguousVariant = findLastContiguousVariant(existingIndices);
+
+  const steps: PlanStep[] = [];
+
+  if (overwriteVariants || !baselineExists) {
+    steps.push({
+      variantId: BASELINE_VARIANT_ID,
+      variantTitle: 'Baseline',
+      variantFolder: BASELINE_VARIANT_ID,
+      variantPromptText: '',
+      targetDir: baselineDir,
+      seedDir: null,
+    });
+  }
+
+  const firstVariantToGenerate = overwriteVariants ? 1 : lastContiguousVariant + 1;
+
+  for (const variant of variants) {
+    if (variant.index < firstVariantToGenerate) {
+      continue;
+    }
+
+    const previousVariantIndex = variant.index - 1;
+    const previousVariantFolder = previousVariantIndex <= 0
+      ? BASELINE_VARIANT_ID
+      : overwriteVariants
+      ? variants[previousVariantIndex - 1].folderName
+      : (existingFolderByIndex.get(previousVariantIndex) ?? variants[previousVariantIndex - 1].folderName);
+
+    const seedDir = variant.index === 1
+      ? baselineDir
+      : join(comboDir, previousVariantFolder);
+
+    steps.push({
+      variantId: variant.id,
+      variantTitle: variant.title,
+      variantFolder: variant.folderName,
+      variantPromptText: variant.promptText,
+      targetDir: join(comboDir, variant.folderName),
+      seedDir,
+    });
+  }
+
+  return {
+    comboDirName,
+    comboDir,
+    comboDirExists,
+    baselineExists,
+    lastContiguousVariant,
+    steps,
+  };
+}
+
+async function copyVariantSeed(sourceDir: string, destinationDir: string): Promise<void> {
+  if (!existsSync(sourceDir)) {
+    throw new Error(`Cannot seed variant; source directory does not exist: ${sourceDir}`);
+  }
+
+  if (existsSync(destinationDir)) {
+    await rm(destinationDir, { recursive: true, force: true });
+  }
+
+  await cp(sourceDir, destinationDir, {
+    recursive: true,
+    force: true,
+    filter: (sourcePath) => {
+      const normalized = sourcePath.replace(/\\/g, '/');
+      const name = normalized.split('/').pop() ?? '';
+
+      if (name === 'node_modules' || name === 'dist' || name === '.git' || name === '.DS_Store') {
+        return false;
+      }
+
+      return true;
+    },
+  });
 }
 
 function buildAgentCommand(
@@ -643,6 +911,39 @@ async function ensureTooling(binaries: string[]): Promise<void> {
   }
 }
 
+function buildVariantManifest(
+  variants: VariantDefinition[],
+  variantsSourcePath: string | null,
+): VariantManifest {
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    sourcePath: variantsSourcePath,
+    variants,
+  };
+}
+
+function buildVariantPrompt(basePrompt: string, step: PlanStep): string {
+  if (step.variantId === BASELINE_VARIANT_ID) {
+    return `${basePrompt}\n\nGeneration scope constraints:\n- Operate only on files inside the current working directory.\n- Do not read or write parent/sibling directories.`;
+  }
+
+  return [
+    basePrompt,
+    '',
+    'Variant addendum:',
+    `- Variant id: ${step.variantId}`,
+    `- Variant title: ${step.variantTitle}`,
+    step.variantPromptText.length > 0 ? step.variantPromptText : '- No additional requirement text provided.',
+    '',
+    'Generation scope constraints:',
+    '- Operate only on files inside the current working directory.',
+    '- Do not read or write parent/sibling directories.',
+    '',
+    'The current working directory was pre-seeded from the previous variant. Modify this version to satisfy the addendum.',
+  ].join('\n');
+}
+
 async function main(): Promise<void> {
   try {
     const args = parseArgs(process.argv.slice(2));
@@ -654,25 +955,30 @@ async function main(): Promise<void> {
     const promptPath = resolve(ROOT, args.promptPath ?? config.defaults.promptPath);
     const promptTemplate = await readFile(promptPath, 'utf8');
 
+    const variantsSourcePath = args.variantsFilePath ? resolve(ROOT, args.variantsFilePath) : null;
+    const variantDefinitions = variantsSourcePath
+      ? parseVariantsMarkdown(await readFile(variantsSourcePath, 'utf8'))
+      : [];
+
     const outputBaseDir = resolve(ROOT, config.defaults.outputBaseDir);
     const backupBaseDir = resolve(ROOT, config.defaults.backupBaseDir);
     const runsBaseDir = resolve(ROOT, config.defaults.runsBaseDir);
     const geminiSystemSettingsPath = resolve(ROOT, 'config/gemini-system-settings.json');
 
     const matrix = resolveMatrix(config, args);
-    const executableMatrix = args.force
-      ? matrix
-      : matrix.filter((item) => {
-        const outputDirName = `${slug(item.provider.id)}-${slug(item.model.key)}-${slug(item.game.key)}`;
-        return !existsSync(join(outputBaseDir, outputDirName));
-      });
 
-    if (!args.dryRun) {
-      if (executableMatrix.length > 0) {
-        const selectedBinaries = [...new Set(executableMatrix.map((item) => item.provider.binary))];
-        selectedBinaries.push('npm');
-        await ensureTooling(selectedBinaries);
-      }
+    const plansByCombo = new Map<string, ComboExecutionPlan>();
+    for (const item of matrix) {
+      const plan = await buildExecutionPlan(item, outputBaseDir, variantDefinitions, args.overwriteVariants);
+      plansByCombo.set(plan.comboDirName, plan);
+    }
+
+    const executableStepCount = [...plansByCombo.values()].reduce((total, plan) => total + plan.steps.length, 0);
+
+    if (!args.dryRun && executableStepCount > 0) {
+      const selectedBinaries = [...new Set(matrix.map((item) => item.provider.binary))];
+      selectedBinaries.push('npm');
+      await ensureTooling(selectedBinaries);
     }
 
     const runBatchTimestamp = fileTimestamp(new Date());
@@ -690,126 +996,186 @@ async function main(): Promise<void> {
 
     console.log(`Harness batch: ${runBatchId}`);
     console.log(`Matrix items: ${matrix.length}`);
+    console.log(`Planned variant definitions: ${variantDefinitions.length}`);
     console.log(`Dry run: ${args.dryRun ? 'yes' : 'no'}`);
-    console.log(`Force regeneration: ${args.force ? 'yes' : 'no'}`);
-    if (!args.dryRun) {
-      console.log(`Matrix items requiring execution: ${executableMatrix.length}`);
-    }
+    console.log(`Overwrite variants: ${args.overwriteVariants ? 'yes' : 'no'}`);
+    console.log(`Planned executable steps: ${executableStepCount}`);
 
     const summary: RunResult[] = [];
 
     for (let i = 0; i < matrix.length; i++) {
       const item = matrix[i];
-      const runIndex = String(i + 1).padStart(3, '0');
-      const runId = `${runIndex}_${slug(item.provider.id)}_${slug(item.model.key)}_${slug(item.game.key)}`;
-      const outputDirName = `${slug(item.provider.id)}-${slug(item.model.key)}-${slug(item.game.key)}`;
-      const outputDir = join(outputBaseDir, outputDirName);
-      const artifactDir = join(runBatchDir, runId);
+      const comboDirName = `${slug(item.provider.id)}-${slug(item.model.key)}-${slug(item.game.key)}`;
+      const plan = plansByCombo.get(comboDirName);
 
-      await mkdir(artifactDir, { recursive: true });
+      if (!plan) {
+        throw new Error(`Missing execution plan for combo ${comboDirName}`);
+      }
 
-      const runStart = Date.now();
-      const outputDirExists = existsSync(outputDir);
+      const matrixPrefix = String(i + 1).padStart(3, '0');
+      const matrixLabel = `${item.provider.id}:${item.model.key} -> ${item.game.key}`;
+      const comboStart = Date.now();
+
+      console.log(`\n[${i + 1}/${matrix.length}] ${matrixLabel}`);
+      console.log(`  existing baseline: ${plan.baselineExists ? 'yes' : 'no'}`);
+      console.log(`  last contiguous variant: v${plan.lastContiguousVariant}`);
+      console.log(`  planned steps: ${plan.steps.length}`);
 
       if (!args.dryRun) {
-        if (outputDirExists && args.force) {
-          const backupName = `${outputDirName}.${runBatchId}`;
+        if (plan.comboDirExists && args.overwriteVariants) {
+          const backupName = `${plan.comboDirName}.${runBatchId}`;
           const backupPath = join(backupBaseDir, backupName);
-          await rename(outputDir, backupPath);
-          await mkdir(outputDir, { recursive: true });
+          await rename(plan.comboDir, backupPath);
+          await mkdir(plan.comboDir, { recursive: true });
+        } else {
+          await mkdir(plan.comboDir, { recursive: true });
         }
 
-        if (!outputDirExists) {
-          await mkdir(outputDir, { recursive: true });
-        }
+        const manifest = buildVariantManifest(variantDefinitions, variantsSourcePath);
+        await writeFile(join(plan.comboDir, 'variants.json'), JSON.stringify(manifest, null, 2), 'utf8');
       }
 
-      const renderedPrompt = renderPrompt(promptTemplate, {
-        GAME_KEY: item.game.key,
-        GAME_NAME: item.game.name,
-        MODEL_PROVIDER: item.provider.id,
-        MODEL_KEY: item.model.key,
-        MODEL_ID: item.model.id,
-        OUTPUT_DIR: outputDir,
-      });
+      if (plan.steps.length === 0) {
+        const runId = `${matrixPrefix}_${slug(item.provider.id)}_${slug(item.model.key)}_${slug(item.game.key)}_up_to_date`;
+        const artifactDir = join(runBatchDir, runId);
+        await mkdir(artifactDir, { recursive: true });
 
-      const commandSpec = buildAgentCommand(item, renderedPrompt, {
-        geminiSystemSettingsPath,
-      });
+        const runResult: RunResult = {
+          runId,
+          game: item.game.key,
+          provider: item.provider.id,
+          modelKey: item.model.key,
+          modelId: item.model.id,
+          comboDir: plan.comboDir,
+          outputDir: plan.comboDir,
+          variantId: null,
+          variantTitle: null,
+          variantFolder: null,
+          durationMs: Date.now() - comboStart,
+          agent: null,
+          validation: null,
+          skipped: true,
+          skipReason: 'up_to_date',
+          failureCategory: 'none',
+        };
 
-      await writeFile(join(artifactDir, 'prompt.txt'), renderedPrompt, 'utf8');
-      await writeFile(
-        join(artifactDir, 'command.json'),
-        JSON.stringify(
-          {
-            command: commandSpec.command,
-            args: commandSpec.args,
-            env: commandSpec.env,
-            cwd: outputDir,
-            timeoutMinutes,
-          },
-          null,
-          2,
-        ),
-        'utf8',
-      );
+        summary.push(runResult);
+        await writeFile(join(artifactDir, 'result.json'), JSON.stringify(runResult, null, 2), 'utf8');
 
-      console.log(`\n[${i + 1}/${matrix.length}] ${item.provider.id}:${item.model.key} -> ${item.game.key}`);
+        console.log('  skipped: combo is already up to date');
+        continue;
+      }
 
-      let agentResult: CommandRunResult | null = null;
-      let validation: ValidationSummary | null = null;
-      let skipped = false;
-      let skipReason: RunResult['skipReason'] = null;
+      for (let stepIndex = 0; stepIndex < plan.steps.length; stepIndex++) {
+        const step = plan.steps[stepIndex];
+        const stepStart = Date.now();
+        const runId = `${matrixPrefix}_${slug(item.provider.id)}_${slug(item.model.key)}_${slug(item.game.key)}_${slug(step.variantId)}`;
+        const artifactDir = join(runBatchDir, runId);
 
-      if (!args.dryRun && !args.force && outputDirExists) {
-        skipped = true;
-        skipReason = 'existing_output';
-      } else if (!args.dryRun) {
-        agentResult = await runProcess(
-          {
-            command: commandSpec.command,
-            args: commandSpec.args,
-            env: commandSpec.env,
-            runCwd: outputDir,
-            timeoutMs,
-            stdoutPath: join(artifactDir, 'agent.stdout.log'),
-            stderrPath: join(artifactDir, 'agent.stderr.log'),
-          },
-          false,
+        await mkdir(artifactDir, { recursive: true });
+
+        if (!args.dryRun) {
+          if (step.seedDir) {
+            await copyVariantSeed(step.seedDir, step.targetDir);
+          } else {
+            await mkdir(step.targetDir, { recursive: true });
+          }
+        }
+
+        const baseRenderedPrompt = renderPrompt(promptTemplate, {
+          GAME_KEY: item.game.key,
+          GAME_NAME: item.game.name,
+          MODEL_PROVIDER: item.provider.id,
+          MODEL_KEY: item.model.key,
+          MODEL_ID: item.model.id,
+          OUTPUT_DIR: step.targetDir,
+          VARIANT_ID: step.variantId,
+          VARIANT_TITLE: step.variantTitle,
+          VARIANT_REQUIREMENTS: step.variantPromptText,
+          VARIANT_FOLDER: step.variantFolder,
+          VARIANT_PROMPT_BLOCK: step.variantPromptText,
+        });
+
+        const renderedPrompt = buildVariantPrompt(baseRenderedPrompt, step);
+
+        const commandSpec = buildAgentCommand(item, renderedPrompt, {
+          geminiSystemSettingsPath,
+        });
+
+        await writeFile(join(artifactDir, 'prompt.txt'), renderedPrompt, 'utf8');
+        await writeFile(
+          join(artifactDir, 'command.json'),
+          JSON.stringify(
+            {
+              command: commandSpec.command,
+              args: commandSpec.args,
+              env: commandSpec.env,
+              cwd: step.targetDir,
+              timeoutMinutes,
+              variantId: step.variantId,
+              variantTitle: step.variantTitle,
+              variantFolder: step.variantFolder,
+            },
+            null,
+            2,
+          ),
+          'utf8',
         );
 
-        validation = await runValidation(outputDir, artifactDir, timeoutMs);
-      }
+        console.log(`  step ${stepIndex + 1}/${plan.steps.length}: ${step.variantId} (${step.variantFolder})`);
 
-      const failureCategory = args.dryRun || skipped
-        ? 'none'
-        : determineFailureCategory(agentResult, validation);
+        let agentResult: CommandRunResult | null = null;
+        let validation: ValidationSummary | null = null;
 
-      const runResult: RunResult = {
-        runId,
-        game: item.game.key,
-        provider: item.provider.id,
-        modelKey: item.model.key,
-        modelId: item.model.id,
-        outputDir,
-        durationMs: Date.now() - runStart,
-        agent: agentResult,
-        validation,
-        skipped,
-        skipReason,
-        failureCategory,
-      };
+        if (!args.dryRun) {
+          agentResult = await runProcess(
+            {
+              command: commandSpec.command,
+              args: commandSpec.args,
+              env: commandSpec.env,
+              runCwd: step.targetDir,
+              timeoutMs,
+              stdoutPath: join(artifactDir, 'agent.stdout.log'),
+              stderrPath: join(artifactDir, 'agent.stderr.log'),
+            },
+            false,
+          );
 
-      summary.push(runResult);
-      await writeFile(join(artifactDir, 'result.json'), JSON.stringify(runResult, null, 2), 'utf8');
-      await writeFile(join(artifactDir, 'validation.json'), JSON.stringify(validation, null, 2), 'utf8');
+          validation = await runValidation(step.targetDir, artifactDir, timeoutMs);
+        }
 
-      if (skipped) {
-        console.log(`  skipped: output exists (use --force to regenerate)`);
-      } else if (args.dryRun) {
-        console.log(`  dry-run complete`);
-      } else {
-        console.log(`  category: ${failureCategory}`);
+        const failureCategory = args.dryRun
+          ? 'none'
+          : determineFailureCategory(agentResult, validation);
+
+        const runResult: RunResult = {
+          runId,
+          game: item.game.key,
+          provider: item.provider.id,
+          modelKey: item.model.key,
+          modelId: item.model.id,
+          comboDir: plan.comboDir,
+          outputDir: step.targetDir,
+          variantId: step.variantId,
+          variantTitle: step.variantTitle,
+          variantFolder: step.variantFolder,
+          durationMs: Date.now() - stepStart,
+          agent: agentResult,
+          validation,
+          skipped: false,
+          skipReason: null,
+          failureCategory,
+        };
+
+        summary.push(runResult);
+        await writeFile(join(artifactDir, 'result.json'), JSON.stringify(runResult, null, 2), 'utf8');
+        await writeFile(join(artifactDir, 'validation.json'), JSON.stringify(validation, null, 2), 'utf8');
+
+        if (args.dryRun) {
+          console.log('    dry-run complete');
+        } else {
+          console.log(`    category: ${failureCategory}`);
+        }
       }
     }
 
@@ -819,7 +1185,7 @@ async function main(): Promise<void> {
     const successCount = summary.filter((entry) => entry.failureCategory === 'none').length;
     const skippedCount = summary.filter((entry) => entry.skipped).length;
     console.log(
-      `\nCompleted ${summary.length} runs; success=${successCount}, failed=${summary.length - successCount}, skipped=${skippedCount}`,
+      `\nCompleted ${summary.length} run steps; success=${successCount}, failed=${summary.length - successCount}, skipped=${skippedCount}`,
     );
     console.log(`Summary: ${summaryPath}`);
 

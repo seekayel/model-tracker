@@ -28,6 +28,12 @@ Run context:
 - Model key: {{MODEL_KEY}}
 - Model id: {{MODEL_ID}}
 - Output directory: {{OUTPUT_DIR}}
+- Variant id: {{VARIANT_ID}}
+- Variant title: {{VARIANT_TITLE}}
+- Variant folder: {{VARIANT_FOLDER}}
+
+Variant requirements:
+{{VARIANT_PROMPT_BLOCK}}
 
 Deliverables:
 1. Complete game source code.

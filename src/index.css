@@ -81,6 +81,8 @@ a {
 .drawer-link:focus-visible,
 .home-play-link:focus-visible,
 .matrix-play-link:focus-visible,
+.variant-play-link:focus-visible,
+.variant-back-link:focus-visible,
 .about-page a:focus-visible {
   outline: 2px solid #d8b4fe;
   outline-offset: 2px;
@@ -433,9 +435,25 @@ a {
   color: #fff;
 }
 
-.matrix-shell {
+.variant-section {
   width: min(1200px, 92vw);
-  margin: 1.4rem auto 0;
+  margin: 1.5rem auto 0;
+}
+
+.variant-header {
+  margin-bottom: 0.7rem;
+}
+
+.variant-title {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: "DM Mono", monospace;
+}
+
+.matrix-shell {
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(10, 7, 20, 0.55);
@@ -536,6 +554,111 @@ a {
 
 .about-page {
   color: #fff;
+}
+
+.variant-page {
+  color: #fff;
+}
+
+.variant-list {
+  width: min(960px, 92vw);
+  margin: 1.35rem auto 0;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.variant-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(145deg, rgba(196, 77, 255, 0.12), rgba(20, 16, 36, 0.82));
+  padding: 1rem;
+}
+
+.variant-empty-card {
+  width: min(760px, 92vw);
+  margin: 1.35rem auto 0;
+}
+
+.variant-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.variant-chip {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #f5ddff;
+  background: rgba(196, 77, 255, 0.2);
+  border: 1px solid rgba(196, 77, 255, 0.4);
+  border-radius: 999px;
+  padding: 0.35rem 0.6rem;
+  font-family: "DM Mono", monospace;
+}
+
+.variant-status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.variant-status.available {
+  color: #98f3c5;
+}
+
+.variant-status.missing {
+  color: #f7a1bd;
+}
+
+.variant-meta {
+  margin: 0.7rem 0 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: "DM Mono", monospace;
+}
+
+.variant-requirement {
+  margin: 0.8rem 0 0;
+  color: rgba(255, 255, 255, 0.86);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.variant-play-link {
+  display: inline-block;
+  margin-top: 0.9rem;
+  text-decoration: none;
+  padding: 0.42rem 0.68rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(196, 77, 255, 0.5);
+  background: linear-gradient(135deg, rgba(196, 77, 255, 0.22), rgba(124, 58, 237, 0.24));
+  color: #f5ddff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.variant-missing-hint {
+  display: inline-block;
+  margin-top: 0.9rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.8rem;
+}
+
+.variant-empty-text {
+  margin: 0.65rem 0 0;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.variant-back-link {
+  display: inline-block;
+  margin-top: 0.8rem;
+  color: #e8b7ff;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(232, 183, 255, 0.45);
 }
 
 .about-card {

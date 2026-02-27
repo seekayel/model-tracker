@@ -33,10 +33,8 @@ Open:
 
 1. Scroll down to move between full-screen game sections.
 2. Use the top-right dot navigation to jump to a specific section.
-3. Read model attribution, rating, and tags on each section.
-
-Current behavior note:
-- The `Play Now` button is visual in the current UI and is not wired to `playUrl` yet.
+3. Click a model chip on a game section to open its variant timeline page.
+4. Use the Grid route to compare all models across baseline and each variant complexity level.
 
 ## Commands
 
@@ -76,31 +74,36 @@ bun run agent:harness
 ```
 
 Default behavior notes:
-- Existing `games/<provider>-<model-key>-<game-key>/` outputs are skipped (not regenerated).
-- Use `--force` when you want to regenerate existing outputs.
+- Baseline is generated if missing.
+- When `--variants-file` is provided, the harness resumes from the last contiguous generated variant (`v1`, `v2`, ...).
+- Use `--overwrite-variants` (or `--force`) to restart from baseline and regenerate all variants.
 - Games are executed in release-year order (oldest to newest).
 
-5. Run a filtered smoke test (example: Pong with Claude + Gemini 3.1 Pro):
+5. Run a filtered smoke test (example: Pong with Claude + Gemini 3.1 Pro + variants):
 
 ```bash
-bun run agent:harness -- --games pong --models claude:opus-4.6,gemini:gemini-3.1-pro --timeout-min 20
+bun run agent:harness -- --games pong --models claude:opus-4.6,gemini:gemini-3.1-pro --variants-file prompts/game-variants.example.md --timeout-min 20
 ```
 
-6. Force regeneration for existing outputs:
+6. Restart baseline + all variants for selected combos:
 
 ```bash
-bun run agent:harness -- --games pong --force
+bun run agent:harness -- --games pong --variants-file prompts/game-variants.example.md --overwrite-variants
 ```
 
 Harness inputs:
 - Models/games/provider matrix: `config/agent-harness.config.json`
 - Prompt template: `prompts/game-clone.template.md`
+- Variant requirements file (optional): `prompts/game-variants.example.md`
 
 Harness outputs:
-- Generated game projects: `games/<provider>-<model-key>-<game-key>/`
+- Generated combo folder: `games/<provider>-<model-key>-<game-key>/`
+- Baseline build: `games/<combo>/baseline/`
+- Variant builds: `games/<combo>/vN-<title-slug>/`
+- Variant metadata: `games/<combo>/variants.json`
 - Per-run artifacts and summary: `runs/<batch-id>/`
 - Run summary JSON: `runs/<batch-id>/summary.json`
-- Backups of overwritten game folders when regenerating (`--force`): `games/.backups/`
+- Backups of overwritten combo folders when regenerating (`--overwrite-variants`): `games/.backups/`
 
 ## Add Or Update Gallery Entries
 
@@ -123,9 +126,9 @@ Each entry uses this shape:
 
 ## Add A New Game (Standalone Build)
 
-1. Create a folder under `games/`, for example `games/my-game/`.
+1. Create a folder under `games/`, for example `games/my-game/` or `games/my-combo/baseline/`.
 2. Add a `package.json` with `dev`, `build`, and `preview` scripts.
-3. Ensure `build` outputs static files to `games/my-game/dist/`.
+3. Ensure `build` outputs static files to `dist/` inside that project folder.
 4. Run:
 
 ```bash
@@ -133,8 +136,8 @@ bun run build:games
 ```
 
 Built output is copied to:
-- `public/games/<game-name>/` during build prep
-- `dist/games/<game-name>/` after `bun run build`
+- `public/games/<relative-game-project-path>/` during build prep
+- `dist/games/<relative-game-project-path>/` after `bun run build`
 
 Full standard: `games/GAME_STANDARD.md`  
 Reference example: `games/hello-world/`

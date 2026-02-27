@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { CatalogRow } from '../catalog';
+import { buildVariantDetailUrl, type CatalogRow } from '../catalog';
 import PlaceholderImage from '../components/PlaceholderImage';
 
 type HomePageProps = {
@@ -84,7 +84,11 @@ export default function HomePage({ rows }: HomePageProps) {
 
               <div className={`home-model-list ${isEven ? 'left' : 'right'}`}>
                 {row.cells.map((cell) => (
-                  <a key={cell.model.id} href={cell.playUrl} className={`home-play-link ${isEven ? 'even' : 'odd'}`}>
+                  <a
+                    key={cell.model.id}
+                    href={buildVariantDetailUrl(row.game.key, cell.model.providerId, cell.model.modelKey)}
+                    className={`home-play-link ${isEven ? 'even' : 'odd'}`}
+                  >
                     {cell.model.providerId}:{cell.model.modelKey}
                   </a>
                 ))}

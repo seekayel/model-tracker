@@ -1,19 +1,34 @@
 import { useEffect, useState } from 'react';
-import { catalogData } from './catalog';
+import { catalogData, findComboDetail } from './catalog';
 import HomePage from './pages/HomePage';
 import GridPage from './pages/GridPage';
 import AboutPage from './pages/AboutPage';
+import VariantPage from './pages/VariantPage';
 
-type AppRoute = '/' | '/grid' | '/about';
+type AppRoute = '/' | '/grid' | '/about' | '/variant';
 
-function resolveRoute(hash: string): AppRoute {
-  const route = hash.replace(/^#/, '') || '/';
+type RouteState = {
+  route: AppRoute;
+  searchParams: URLSearchParams;
+};
 
-  if (route === '/' || route === '/grid' || route === '/about') {
-    return route;
+function resolveRouteState(hash: string): RouteState {
+  const value = hash.replace(/^#/, '') || '/';
+  const questionIndex = value.indexOf('?');
+  const route = questionIndex >= 0 ? value.slice(0, questionIndex) : value;
+  const queryString = questionIndex >= 0 ? value.slice(questionIndex + 1) : '';
+
+  if (route === '/' || route === '/grid' || route === '/about' || route === '/variant') {
+    return {
+      route,
+      searchParams: new URLSearchParams(queryString),
+    };
   }
 
-  return '/';
+  return {
+    route: '/',
+    searchParams: new URLSearchParams(''),
+  };
 }
 
 function routeHref(route: AppRoute): string {
@@ -24,15 +39,24 @@ const ROUTE_LABELS: Record<AppRoute, string> = {
   '/': 'Home',
   '/grid': 'Grid',
   '/about': 'About',
+  '/variant': 'Variant',
 };
 
 export default function App() {
-  const [route, setRoute] = useState<AppRoute>(() => resolveRoute(window.location.hash));
+  const [hashLocation, setHashLocation] = useState<string>(() => window.location.hash);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const routeState = resolveRouteState(hashLocation);
+  const route = routeState.route;
+  const variantGameKey = routeState.searchParams.get('game') ?? '';
+  const variantProviderId = routeState.searchParams.get('provider') ?? '';
+  const variantModelKey = routeState.searchParams.get('model') ?? '';
+  const comboDetail = route === '/variant'
+    ? findComboDetail(variantGameKey, variantProviderId, variantModelKey)
+    : null;
 
   useEffect(() => {
     const onHashChange = () => {
-      setRoute(resolveRoute(window.location.hash));
+      setHashLocation(window.location.hash);
     };
 
     window.addEventListener('hashchange', onHashChange);
@@ -117,9 +141,17 @@ export default function App() {
         </nav>
       </aside>
 
-      {route === '/' && <HomePage rows={catalogData.rows} />}
-      {route === '/grid' && <GridPage models={catalogData.models} rows={catalogData.rows} />}
+      {route === '/' && <HomePage rows={catalogData.baselineRows} />}
+      {route === '/grid' && <GridPage models={catalogData.models} sections={catalogData.sections} />}
       {route === '/about' && <AboutPage />}
+      {route === '/variant' && (
+        <VariantPage
+          combo={comboDetail}
+          gameKey={variantGameKey}
+          providerId={variantProviderId}
+          modelKey={variantModelKey}
+        />
+      )}
     </div>
   );
 }

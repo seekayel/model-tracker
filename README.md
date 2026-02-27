@@ -139,7 +139,7 @@ Built output is copied to:
 - `public/games/<relative-game-project-path>/` during build prep
 - `dist/games/<relative-game-project-path>/` after `bun run build`
 
-Full standard: `games/GAME_STANDARD.md`  
+Full standard: `docs/GAME_STANDARD.md`  
 Reference example: `games/hello-world/`
 
 ## Deployment
